@@ -1,0 +1,11 @@
+{
+  "name": "synq",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "concurrently \"pnpm -C frontend dev\" \"cd backend && uv run fastapi dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

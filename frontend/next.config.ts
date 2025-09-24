@@ -1,5 +1,8 @@
 import { type NextConfig } from 'next';
+import path from 'path'
 
 export default {
-  /* config options here */
+  turbopack: {
+    root: path.join(__dirname, '..'),
+  }
 } satisfies NextConfig;
