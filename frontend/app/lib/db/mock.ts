@@ -764,3 +764,64 @@ export const mockCompanies = [
     annual_revenue: 32_000_000
   }
 ];
+
+export const mockPEOs = [
+  {
+    code: 'PEO_IWS',
+    name: 'Program Executive Office for Integrated Warfare Systems',
+    parent_agency: 'Navy',
+    mission_area: 'Integrated Warfare Systems, Missile Defense',
+    annual_budget: 7_200_000_000,
+    description: 'Manages surface ship combat systems, missile defense...'
+  },
+  {
+    code: 'PEO_C3T',
+    name: 'Program Executive Office for Command, Control and Communications-Tactical',
+    parent_agency: 'Army',
+    mission_area: 'Tactical Communications, Network Modernization',
+    annual_budget: 4_100_000_000,
+  },
+  {
+    code: 'PEO_STRI',
+    name: 'Program Executive Office for Simulation, Training and Instrumentation',
+    parent_agency: 'Army',
+    mission_area: 'Training Systems, Live-Virtual-Constructive',
+    annual_budget: 2_800_000_000,
+  },
+  {
+    code: 'PEO_DCS',
+    name: 'Program Executive Office for Digital and Enterprise Services',
+    parent_agency: 'Air Force',
+    mission_area: 'IT Modernization, Cloud Services, Cybersecurity',
+    annual_budget: 5_500_000_000,
+  },
+  {
+    code: 'PEO_IEWS',
+    name: 'Program Executive Office for Intelligence, Electronic Warfare & Sensors',
+    parent_agency: 'Air Force',
+    mission_area: 'ISR, Electronic Warfare, Space Systems',
+    annual_budget: 8_900_000_000,
+  },
+  {
+    code: 'PEO_CBD',
+    name: 'Joint Program Executive Office for Chemical, Biological Defense',
+    parent_agency: 'Joint (Army Lead)',
+    mission_area: 'CBRN Defense, Biosurveillance',
+    annual_budget: 1_600_000_000,
+  },
+  {
+    code: 'PEO_GCS',
+    name: 'Program Executive Office for Ground Combat Systems',
+    parent_agency: 'Army',
+    mission_area: 'Combat Vehicles, Robotic Systems',
+    annual_budget: 6_700_000_000,
+  },
+  {
+    code: 'PEO_DHMS',
+    name: 'Program Executive Office for Defense Healthcare Management Systems',
+    parent_agency: 'Defense Health Agency',
+    mission_area: 'Military Health IT, EHR Modernization',
+    annual_budget: 3_400_000_000,
+  },
+];
+

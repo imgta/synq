@@ -17,6 +17,14 @@ export const companies = pgTable('companies', {
   set_asides: jsonb('set_asides').$type<string[]>(), // SB, WO, VO, 8a, HUBZone, etc.
   employee_count: integer('employee_count'),
   annual_revenue: integer('annual_revenue'),
+
+  // capability signals for AI matching
+  certifications: jsonb('certifications').$type<string[]>(), // ISO 9001, CMMC, FedRAMP
+  past_performance: jsonb('past_performance').$type<{
+    rating?: number; // 0-5 scale
+    notable_contracts?: string[]; // ["$12M USAF contract", "VA EHR integration"]
+  }>(),
+
   embedding: vector('embedding', { dimensions: EMBEDDING_DIMENSIONS }),
   created_at: timestamp('created_at', { precision: 6, withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { precision: 6, withTimezone: true }).defaultNow().notNull(),
@@ -172,30 +180,65 @@ export const company_opportunity = pgTable('company_opportunity', {
     .where(sql`bookmarked_at IS NOT NULL`),
 ]);
 
-export const naics = pgTable('naics', {
-  code: text('code').primaryKey(), // 6-digit zero-padded code
-  description: text('description').notNull(),
-  title: text('title'),
-  level: integer('level').notNull(), // 2-6 (specificity)
-  sector: text('sector').notNull(), // first 2 digits
-  subsector: text('subsector'),
-  industry_group: text('industry_group'),
-  industry: text('industry'),
+/**
+ * Programs - major federal acquisition programs that spawn multiple opportunities
+ * Focus: High-value context for AI agent prompts about market landscape
+ */
+export const programs = pgTable('programs', {
+    id: text('id').primaryKey().$defaultFn(() => genUUID(20)),
+    name: text('name').notNull(),
+    code: text('code').unique(),
 
-  // relationships, cross-references
-  related_codes: jsonb('related_codes').$type<string[]>().default([]),
-  cross_ref_count: integer('cross_ref_count').default(0),
-  defense_related: boolean('defense_related').default(false),
-  defense_keyword_count: integer('defense_keyword_count').default(0),
-  validated: boolean('validated').default(true),
-  change_indicator: text('change_indicator'),
+    description: text('description').notNull(),
+    estimated_value: integer('estimated_value'), // total program value in millions
 
-  embedding: vector('embedding', { dimensions: EMBEDDING_DIMENSIONS }),
-  created_at: timestamp('created_at', { precision: 6, withTimezone: true }).defaultNow().notNull(),
-  updated_at: timestamp('updated_at', { precision: 6, withTimezone: true }).defaultNow().notNull(),
+    // core AI prompt signals
+    key_naics: jsonb('key_naics').$type<string[]>(), // primary NAICS codes for program
+    prime_contractors: jsonb('prime_contractors').$type<string[]>(), // who typically wins
+
+    created_at: timestamp('created_at', { precision: 6, withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp('updated_at', { precision: 6, withTimezone: true }).defaultNow().notNull(),
 }, table => [
-  index('naics_sector_idx').on(table.sector),
-  index('naics_level_idx').on(table.level),
-  index('naics_defense_idx').on(table.defense_related),
-  index('naics_embedding_idx').using('hnsw', table.embedding.op('vector_cosine_ops')),
+    index('programs_code_idx').on(table.code),
+]);
+
+/**
+ * Junction table: opportunities ↔ programs
+ * Enables AI to say: "This opportunity is part of the $18.5B Golden Dome program"
+ */
+export const opportunity_program = pgTable('opportunity_program', {
+    opportunity_id: text('opportunity_id').notNull().references(() => opportunities.id, { onDelete: 'cascade' }),
+    program_id: text('program_id').notNull().references(() => programs.id, { onDelete: 'cascade' }),
+    created_at: timestamp('created_at', { precision: 6, withTimezone: true }).defaultNow().notNull(),
+}, table => [
+    primaryKey({ columns: [table.opportunity_id, table.program_id] }),
+    index('opp_prog_opportunity_idx').on(table.opportunity_id),
+    index('opp_prog_program_idx').on(table.program_id),
+]);
+
+/**
+ * Awards - contract award history for pattern analysis
+ * Focus: Minimal data needed to show "what NAICS combinations win together"
+ */
+export const awards = pgTable('awards', {
+    id: text('id').primaryKey().$defaultFn(() => genUUID(20)),
+    contract_number: text('contract_number').notNull(),
+    awarded_date: timestamp('awarded_date', { mode: 'date' }).notNull(),
+
+    // Core matchmaking signals
+    naics_code: text('naics_code').notNull(),
+    partner_naics: jsonb('partner_naics').$type<string[]>(), // For JV awards
+    award_amount: integer('award_amount'),
+
+    // Link to program context
+    program_id: text('program_id').references(() => programs.id, { onDelete: 'set null' }),
+
+    // Success indicator
+    performance: text('performance'), // 'exceptional' | 'satisfactory' | 'poor'
+
+    created_at: timestamp('created_at', { precision: 6, withTimezone: true }).defaultNow().notNull(),
+}, table => [
+    index('awards_naics_idx').on(table.naics_code),
+    index('awards_program_idx').on(table.program_id),
+    index('awards_date_idx').on(table.awarded_date),
 ]);
