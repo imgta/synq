@@ -1,22 +1,60 @@
-import Image from 'next/image';
+'use client';
 
-export default async function Home() {
+import { useChat } from '@ai-sdk/react';
+import { useState } from 'react';
+
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { SearchBar } from '@/components/SearchBar';
+
+export default function Index() {
+  const [input, setInput] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const { messages, sendMessage } = useChat();
+
+  async function onSubmit() {
+    sendMessage({ text: input });
+    setInput('');
+  }
+
+  function onClear() {
+    setSubmitted(false);
+    setInput('');
+  }
 
   return (
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <h1 className="text-4xl font-bold mb-4">Synergy Matchmaking Platform</h1>
+      <main className="flex flex-col row-start-2 items-center sm:items-start">
+        <h1 className="text-4xl font-medium mb-4 font-">synQ Engine</h1>
+        <div className="flex flex-col w-full max-w-xl py-24 mx-auto stretch">
+          {messages.map(m =>
+            <div key={m.id} className="whitespace-pre-wrap">
+              {m.role === 'user' ? 'User: ' : 'SynQ: '}
+              {m.parts.map((part, idx) => {
+                const key = `${m.id}-${idx}`;
+                switch (part.type) {
+                  case 'text':
+                    return <div key={key}>{part.text}</div>;
+                  case 'tool-weather':
+                    return <pre key={key}>{JSON.stringify(part, null, 2)}</pre>;
+                }
+              })}
+            </div>
+          )}
+
+          <SearchBar
+            input={input}
+            submitted={submitted}
+            setInput={setInput}
+            onSubmit={onSubmit}
+            onClear={onClear}
+          />
+        </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-      </footer>
     </div>
   );
 }
