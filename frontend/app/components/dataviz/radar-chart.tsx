@@ -7,7 +7,7 @@ import { PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, RadarChart } from 'r
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Building2, Target } from 'lucide-react';
 
-interface FitScoreBreakdown {
+interface FitScoreMetrics {
   naicsScore: number;
   setAsideScore: number;
   sizeScore: number;
@@ -25,6 +25,193 @@ interface CompanyFitMetrics {
   annual_revenue: number;
 }
 
+interface OpportunityFitMetrics {
+  naics_code: string;
+  secondary_naics?: string[];
+  set_aside_code?: string;
+  estimated_value?: number;
+}
+
+function computeFitScore(
+  company: CompanyFitMetrics,
+  opportunity: OpportunityFitMetrics,
+): FitScoreMetrics {
+  const reasoning: string[] = [];
+
+  // ===========================
+  // 1. NAICS ALIGNMENT (40% weight)
+  // ===========================
+  let naicsScore = 0;
+  const companyNAICS = [company.primary_naics, ...company.other_naics];
+  const allOpportunityNAICS = [opportunity.naics_code, ...(opportunity.secondary_naics || [])];
+
+  // Primary NAICS perfect match
+  if (company.primary_naics === opportunity.naics_code) {
+    naicsScore = 100;
+    reasoning.push('✓ Primary NAICS is exact match');
+  }
+  // Primary matches any secondary requirement
+  else if (opportunity.secondary_naics?.includes(company.primary_naics)) {
+    naicsScore = 85;
+    reasoning.push('✓ Primary NAICS matches secondary requirement');
+  }
+  // Any NAICS exact match
+  else if (companyNAICS.some(nc => allOpportunityNAICS.includes(nc))) {
+    naicsScore = 75;
+    reasoning.push('✓ Secondary NAICS matches opportunity');
+  }
+  // 5-digit match (national industry level)
+  else if (companyNAICS.some(co =>
+    allOpportunityNAICS.some(opp => co.substring(0, 5) === opp.substring(0, 5))
+  )) {
+    naicsScore = 60;
+    reasoning.push('○ NAICS match at industry level (5-digit)');
+  }
+  // 4-digit match (industry group level)
+  else if (companyNAICS.some(co =>
+    allOpportunityNAICS.some(opp => co.substring(0, 4) === opp.substring(0, 4))
+  )) {
+    naicsScore = 45;
+    reasoning.push('○ NAICS match at industry group (4-digit)');
+  }
+  // 3-digit match (subsector level)
+  else if (companyNAICS.some(co =>
+    allOpportunityNAICS.some(opp => co.substring(0, 3) === opp.substring(0, 3))
+  )) {
+    naicsScore = 30;
+    reasoning.push('△ NAICS match at subsector (3-digit)');
+  }
+  // 2-digit match (sector level only)
+  else if (companyNAICS.some(co =>
+    allOpportunityNAICS.some(opp => co.substring(0, 2) === opp.substring(0, 2))
+  )) {
+    naicsScore = 15;
+    reasoning.push('△ Weak NAICS match at sector level only');
+  } else {
+    reasoning.push('✗ No NAICS alignment detected');
+  }
+
+  // ===========================
+  // 2. SET-ASIDE ELIGIBILITY (30% weight)
+  // ===========================
+  let setAsideScore = 0;
+  let eligible = true;
+
+  if (opportunity.set_aside_code) {
+    // Map common set-aside codes
+    const setAsideMap: Record<string, string[]> = {
+      'SBA': ['SB'],
+      'SB': ['SB'],
+      'SDVOSBC': ['VO', 'SDVOSB'],
+      'WOSB': ['WO', 'WOSB'],
+      'EDWOSB': ['WO', 'EDWOSB'],
+      '8A': ['8a', '8A'],
+      'HZC': ['HZ', 'HUBZone'],
+    };
+
+    const requiredCerts = setAsideMap[opportunity.set_aside_code] || [opportunity.set_aside_code];
+    const hasRequiredCert = requiredCerts.some(cert =>
+      company.sba_certifications.some(c => c.toUpperCase().includes(cert.toUpperCase()))
+    );
+
+    if (hasRequiredCert) {
+      setAsideScore = 100;
+      reasoning.push(`✓ Certified for ${opportunity.set_aside_code} set-aside`);
+    } else {
+      setAsideScore = 0;
+      eligible = false;
+      reasoning.push(`✗ NOT certified for required ${opportunity.set_aside_code} set-aside`);
+    }
+  } else {
+    // No set-aside = full and open competition
+    setAsideScore = 100;
+    reasoning.push('○ Full and open competition (no set-aside)');
+  }
+
+  // ===========================
+  // 3. SIZE/CAPABILITY MATCH (20% weight)
+  // ===========================
+  let sizeScore = 100; // default to neutral
+
+  // NAICS size standards vary, but rough heuristics:
+  // - Small business: typically <500 employees OR <$7.5M-$41.5M revenue
+  // - Large contracts may require significant capacity
+
+  if (opportunity.estimated_value) {
+    const revenueRatio = company.annual_revenue / opportunity.estimated_value;
+
+    if (revenueRatio >= 3) {
+      sizeScore = 100;
+      reasoning.push('✓ Strong financial capacity for contract value');
+    } else if (revenueRatio >= 1.5) {
+      sizeScore = 80;
+      reasoning.push('○ Adequate financial capacity');
+    } else if (revenueRatio >= 0.5) {
+      sizeScore = 60;
+      reasoning.push('△ Moderate financial capacity - may need partners');
+    } else {
+      sizeScore = 30;
+      reasoning.push('⚠ Limited financial capacity - joint venture recommended');
+    }
+  }
+
+  // Employee count considerations for service contracts
+  if (company.employee_count < 50 && opportunity.naics_code.startsWith('54')) {
+    // Professional/technical services with small team
+    reasoning.push('○ Small team may limit capacity for large-scale delivery');
+    sizeScore = Math.min(sizeScore, 70);
+  }
+
+  // ===========================
+  // 4. CAPABILITY DEPTH (10% weight)
+  // ===========================
+  let capabilityScore = 0;
+  const naicsCount = companyNAICS.length;
+
+  if (naicsCount >= 4) {
+    capabilityScore = 100;
+    reasoning.push('✓ Diverse capability portfolio');
+  } else if (naicsCount === 3) {
+    capabilityScore = 80;
+  } else if (naicsCount === 2) {
+    capabilityScore = 60;
+  } else {
+    capabilityScore = 40;
+    reasoning.push('△ Limited NAICS portfolio - consider partnerships');
+  }
+
+  // Bonus for secondary NAICS coverage
+  if (opportunity.secondary_naics && opportunity.secondary_naics.length > 0) {
+    const secondaryCoverage = opportunity.secondary_naics.filter(sn =>
+      companyNAICS.includes(sn)
+    ).length / opportunity.secondary_naics.length;
+
+    if (secondaryCoverage >= 0.5) {
+      capabilityScore = Math.min(100, capabilityScore + 15);
+      reasoning.push('✓ Covers multiple secondary requirements');
+    }
+  }
+
+  // ===========================
+  // WEIGHTED OVERALL SCORE
+  // ===========================
+  const overallScore = Math.round(
+    (naicsScore * 0.40) +
+    (setAsideScore * 0.30) +
+    (sizeScore * 0.20) +
+    (capabilityScore * 0.10)
+  );
+
+  return {
+    naicsScore,
+    setAsideScore,
+    sizeScore,
+    capabilityScore,
+    overallScore,
+    eligible,
+    reasoning,
+  };
+}
 
 // calculate fit score based on NAICS code alignment
 function calculateFitScore(companyNAICS: string[], opportunityNAICS: string, secondaryNAICS: string[] = []): number {
@@ -64,24 +251,45 @@ export function DataRadarChart() {
 
   const company = MOCK_COMPANIES.find(co => co.name === selectedCompany);
   if (!company) return null;
-
   const companyNAICS = [company.primary_naics, ...company.other_naics];
 
-  // calculate fit scores for all opportunities
   const radarData = MOCK_OPPORTUNITIES.map(opp => {
-    const fitScore = calculateFitScore(companyNAICS, opp.naics_code, opp.secondary_naics || []);
+    const fitAnalysis = computeFitScore(company, opp);
+
     return {
       opportunity: opp.title.length > 40 ? opp.title.substring(0, 40) + '...' : opp.title,
       fullTitle: opp.title,
-      fit: fitScore,
+      fit: fitAnalysis.overallScore,
+      naicsScore: fitAnalysis.naicsScore,
+      setAsideScore: fitAnalysis.setAsideScore,
+      sizeScore: fitAnalysis.sizeScore,
+      capabilityScore: fitAnalysis.capabilityScore,
+      eligible: fitAnalysis.eligible,
+      reasoning: fitAnalysis.reasoning,
       noticeId: opp.notice_id,
       naicsCode: opp.naics_code,
       setAside: opp.set_aside_code,
     };
   }).sort((a, b) => b.fit - a.fit);
 
-  // top 6 opportunities for hexagonal radar chart
-  const topOpportunities = radarData.slice(0, 6);
+  // Filter to only eligible opportunities or show warning
+  const eligibleOpportunities = radarData.filter(o => o.eligible);
+  const topOpportunities = eligibleOpportunities.slice(0, 6);
+
+  // // calculate fit scores for all opportunities
+  // const radarData = MOCK_OPPORTUNITIES.map(opp => {
+  //   const fitScore = calculateFitScore(companyNAICS, opp.naics_code, opp.secondary_naics || []);
+  //   return {
+  //     opportunity: opp.title.length > 40 ? opp.title.substring(0, 40) + '...' : opp.title,
+  //     fullTitle: opp.title,
+  //     fit: fitScore,
+  //     noticeId: opp.notice_id,
+  //     naicsCode: opp.naics_code,
+  //     setAside: opp.set_aside_code,
+  //   };
+  // }).sort((a, b) => b.fit - a.fit);
+  // // top 6 opportunities for hexagonal radar chart
+  // const topOpportunities = radarData.slice(0, 6);
 
   return (
     <Card className="border-border/40 shadow-sm bg-card/50 backdrop-blur-sm p-8 ">
