@@ -1,4 +1,4 @@
-export type FilterProcurementType =
+export type ProcurementType =
   'r' | // Sources Sought
   'p' | // Presolicitation
   'o' | // Solicitation
@@ -8,8 +8,8 @@ export type FilterProcurementType =
   's' | // Special Notice
   'i' | // Intent to Bundle Requirements (DoD-Funded)
   'g';  // Sale of Surplus Property
-export type FilterStatus = 'active' | 'inactive' | 'archived' | 'cancelled' | 'deleted';
-export type FilterSetAside =
+export type OpportunityStatus = 'active' | 'inactive' | 'archived' | 'cancelled' | 'deleted';
+export type SetAsideType =
   'SBA'
   | 'SBP'
   | '8A'
@@ -32,17 +32,17 @@ export type FilterSetAside =
 export interface OpportunitySearchParams {
   postedFrom?: string;
   postedTo?: string;
-  ptype?: FilterProcurementType;
-  solum?: string;
+  ptype?: ProcurementType;
+  solnum?: string;
   noticeid?: string;
   title?: string;
-  status?: FilterStatus;
+  status?: OpportunityStatus;
   // Place of Performance (state, zip code)
   state?: string;
   zip?: string;
   organizationCode?: string;
   organizationName?: string; // org, dept name, subtier name
-  typeOfSetAside?: FilterSetAside,
+  typeOfSetAside?: SetAsideType,
   typeOfSetAsideDescription?: string,
   ncode?: string; // NAICS Code
   ccode?: string; // Classification Code
@@ -52,6 +52,8 @@ export interface OpportunitySearchParams {
   offset?: number; // default 0
   keyword?: string;
 }
+
+const DEFAULT_PTYPES: ProcurementType[] = ['r', 'p', 'o', 'k']; // pre-award only
 
 export class SAMGovClient {
   private apiKey: string;
@@ -63,8 +65,7 @@ export class SAMGovClient {
   }
 
   async searchOpportunities(params: OpportunitySearchParams) {
-    // default to pre-award procurement types only
-    const defaultPTypes = ['r', 'p', 'o', 'k'].join(',');
+    const defaultPTypes = DEFAULT_PTYPES.join(',');
 
     const searchParams = new URLSearchParams({
       postedFrom: params.postedFrom ?? this.getDefaultPostedFrom(),

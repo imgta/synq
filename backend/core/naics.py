@@ -1,5 +1,4 @@
 from typing import Dict, List, Optional
-from urllib.parse import urljoin, quote
 from datetime import datetime
 from pathlib import Path
 import pandas as pd
@@ -26,12 +25,27 @@ class NAICSProcessor:
         self.data_dir = core_dir / "data"
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
-        self.base_url = "https://www.census.gov/naics/2022NAICS/"
         self.files = {
-            "2_6_digit_codes": "2-6 digit_2022_Codes.xlsx",
-            "descriptions": "2022_NAICS_Descriptions.xlsx",
-            "structure": "2022_NAICS_Structure.xlsx",
-            "cross_references": "2022_NAICS_Cross_References.xlsx",
+            "2_6_digit_codes": {
+                "url": "https://www.census.gov/naics/2022NAICS/2-6%20digit_2022_Codes.xlsx",
+                "filename": "2-6 digit_2022_Codes.xlsx",
+            },
+            "descriptions": {
+                "url": "https://www.census.gov/naics/2022NAICS/2022_NAICS_Descriptions.xlsx",
+                "filename": "2022_NAICS_Descriptions.xlsx",
+            },
+            "structure": {
+                "url": "https://www.census.gov/naics/2022NAICS/2022_NAICS_Structure.xlsx",
+                "filename": "2022_NAICS_Structure.xlsx",
+            },
+            "cross_references": {
+                "url": "https://www.census.gov/naics/2022NAICS/2022_NAICS_Cross_References.xlsx",
+                "filename": "2022_NAICS_Cross_References.xlsx",
+            },
+            "sba_size_standards": {
+                "url": "https://data.sba.gov/dataset/c17e8870-fa85-48a4-8887-9a51b7503711/resource/2f56c7b6-715f-41f5-a470-2ee124af146a/download/sba-table-of-size-standards_effective-march-17-2023_v0.xlsx",
+                "filename": "sba-table-of-size-standards_effective-march-17-2023_v0.xlsx",
+            },
         }
         self.cache_file = self.data_dir / "naics_lookups.json"
         # lambda function to right-pad NAICS codes with '0' to 6 digits
@@ -78,7 +92,6 @@ class NAICSProcessor:
 
     def process_and_cache(self) -> Dict:
         """Performs full data processing pipeline and caches the result."""
-
         download_status = self.download_files()
         if not all(download_status.values()):
             raise Exception(f"Failed to download files: {download_status}")
@@ -93,50 +106,51 @@ class NAICSProcessor:
             "timestamp": datetime.now().timestamp(),
             "expires_at": datetime.now().timestamp() + 604800,  # 7-day expiry
         }
-
         try:
-            print(f"Writing new cache file: {self.cache_file}")
+            print(f"New cache file: {self.cache_file}")
             with open(self.cache_file, "w") as f:
                 json.dump(result, f, indent=2)
         except Exception as e:
             print(f"Warning: Failed to write to cache: {e}")
+        print("✔ Lookup map processing complete.")
         return result
 
     def download_files(self) -> Dict[str, bool]:
         """Download only essential NAICS files for lookup generation"""
         results = {}
-        for name, filename in self.files.items():
+        for name, file_info in self.files.items():
+            url = file_info["url"]
+            filename = file_info["filename"]
             file_path = self.data_dir / filename
+
+            # check for existing copy
             if file_path.exists():
                 results[name] = True
                 continue
-
-            try:
-                url = urljoin(self.base_url, quote(filename))
+            try:  # download from source
                 response = requests.get(url, timeout=30)
                 response.raise_for_status()
                 with open(file_path, "wb") as f:
                     f.write(response.content)
-
                 results[name] = True
             except Exception as e:
                 results[name] = False
                 print(f"Failed to download {filename}: {e}")
-
         return results
 
     def load_naics_data(self):
-        """Load, process, and integrate all NAICS data"""
+        """Load, process, and merge all NAICS data"""
         desc_df = self._load_descriptions()  # core descriptions
         codes_df = self._load_2_6_digit_codes()  # 2-6 digit NAICS codes for validation
         structure_df = self._load_structure()  # detailed hierarchy and metadata
         cross_ref_data = self._load_cross_references()  # cross references for relationship mapping
-        # merge all data sources
-        df = self._merge_naics_data(desc_df, codes_df, structure_df, cross_ref_data)
+        sba_df = self._load_sba_size_standards()
+
+        df = self._merge_naics_data(desc_df, codes_df, structure_df, cross_ref_data, sba_df)
         return df
 
     def _find_col(self, df: pd.DataFrame, matches: List[str], fallback_idx: int):
-        """Return the first column whose name contains any of `matches` (case-insensitive)."""
+        """Helper function to find first column whose name contains any of `matches` (case-insensitive)."""
         for m in matches:
             hits = [c for c in df.columns if m in c.lower()]
             if hits:
@@ -145,17 +159,90 @@ class NAICSProcessor:
             raise IndexError(f"Fallback index {fallback_idx} is out of bounds for DataFrame")
         return df.columns[fallback_idx]
 
+    def _load_sba_size_standards(self, file_key: str = "sba_size_standards") -> pd.DataFrame:
+        files_info = self.files[file_key]
+        filename = files_info["filename"]
+        file_path = self.data_dir / filename
+        if not file_path.exists():
+            print(f"Warning: SBA size standards file not found at {file_path}, skipping...")
+            return pd.DataFrame()
+
+        try:
+            df = pd.read_excel(
+                file_path,
+                sheet_name="table_of_size_standards-all",  # we want the 2nd sheet
+                header=0,  # headers are on first row
+                dtype=str,
+            ).rename(columns=str.lower)
+            df.columns = [c.lower().replace("\n", " ").strip() for c in df.columns]
+
+            code_col = self._find_col(df, ["naics codes"], 0)
+            receipts_col = self._find_col(df, ["millions of dollars"], 2)
+            employees_col = self._find_col(df, ["number of employees"], 3)
+
+            # select relevant columns
+            df = df[[code_col, receipts_col, employees_col]].copy()
+            df.rename(columns={code_col: "naics_code"}, inplace=True)
+
+            # filter out header rows by ensuring the row starts with a digit
+            df = df[df["naics_code"].str.match(r"^\d", na=False)]
+
+            # force to numeric to handle ".0" floats, coercing errors
+            df["naics_code"] = pd.to_numeric(df["naics_code"], errors="coerce")
+
+            # drop rows that are NaN
+            df.dropna(subset=["naics_code"], inplace=True)
+
+            # zero-pad codes to up to 6 digits
+            df["naics_code"] = df["naics_code"].astype(np.int64).astype(str).apply(self.zero_pad)
+
+            # convert size standard columns to numeric, coerce errors to NaN
+            receipts = pd.to_numeric(df[receipts_col], errors="coerce")
+            employees = pd.to_numeric(df[employees_col], errors="coerce")
+
+            # determine size metric by selecting for the column with a valid number
+            df["size_standard_metric"] = np.select(
+                [receipts.notna(), employees.notna()],
+                ["receipts", "employees"],
+                default="",
+            )
+
+            # calculate max threshold, convert millions to dollars
+            df["size_standard_max"] = np.where(
+                df["size_standard_metric"] == "receipts",
+                receipts * 1_000_000,
+                employees,
+            )
+            # drop any unresolved rows
+            df.dropna(subset=["size_standard_max", "size_standard_metric"], inplace=True)
+            # convert max threshold to 64-bit int (bigint) for database compatibility
+            df["size_standard_max"] = df["size_standard_max"].astype(np.int64)
+
+            # prepare and return final, clean dataframe
+            final_df = (
+                df[["naics_code", "size_standard_metric", "size_standard_max"]]
+                .drop_duplicates("naics_code")
+                .reset_index(drop=True)
+            )
+            print(f"{filename}: processed {len(final_df)} size standards.")
+            return final_df
+        except Exception as e:
+            print(f"Error processing SBA size standards file {filename}: {e}")
+            return pd.DataFrame()
+
     def _load_descriptions(self, file_key: str = "descriptions") -> pd.DataFrame:
         """
         Load the 2022_NAICS_Descriptions.xlsx sheet.\n
         cols: Code | Title | Description
         """
-        filename = self.files[file_key]
-        file_ = self.data_dir / filename
-        if not file_.exists():
-            raise FileNotFoundError(f"Descriptions file not found: {file_}")
+        file_info = self.files[file_key]
+        filename = file_info["filename"]
+        url = file_info["url"]
+        file_path = self.data_dir / filename
+        if not file_path.exists():
+            raise FileNotFoundError(f"Descriptions file not found: {file_path}")
 
-        df = pd.read_excel(io=file_, dtype=str).rename(columns=str.lower)
+        df = pd.read_excel(io=file_path, dtype=str).rename(columns=str.lower)
 
         # find column header names
         code_col = self._find_col(df, ["code"], 0)
@@ -179,17 +266,15 @@ class NAICSProcessor:
             title + " - " + description,
             title,
         )
-
         # rename, cite, and return clean dataframe
         df[title_col] = title
         df = (
-            df[[code_col, desc_col]]
+            df[[code_col, title_col, desc_col]]
             .rename(columns={code_col: "naics_code", title_col: "title", desc_col: "description"})
             .drop_duplicates(subset="naics_code")
             .reset_index(drop=True)
         )
-        df["source"] = urljoin(self.base_url, quote(filename))
-
+        df["source"] = url
         print(f"{filename}: loaded {len(df)} records.")
         return df
 
@@ -198,20 +283,21 @@ class NAICSProcessor:
         Load 2-6 digit NAICS codes excel sheet.\n
         cols: Seq. No | 2022 NAICS US   Code | 2022 NAICS US Title
         """
-        filename = self.files[file_key]
-        file_ = self.data_dir / filename
-        if not file_.exists():
+        files_ = self.files[file_key]
+        filename = files_["filename"]
+        url = files_["url"]
+        file_path = self.data_dir / filename
+        if not file_path.exists():
             print("Warning: 2-6 digit codes file not found, skipping...")
             return pd.DataFrame()
-
-        df = pd.read_excel(io=file_, dtype=str).rename(columns=str.lower)
+        df = pd.read_excel(io=file_path, dtype=str).rename(columns=str.lower)
         code_col = self._find_col(df, ["code"], 1)
 
         # right-pad NAICS codes with '0' to 6 digits
         df[code_col] = df[code_col].apply(self.zero_pad)
 
         df = df[[code_col]].rename(columns={code_col: "naics_code"}).dropna().drop_duplicates()
-        df["source"] = urljoin(self.base_url, quote(filename))  # add source
+        df["source"] = url  # add source
 
         print(f"{filename}: loaded {len(df)} records.")
         return df
@@ -226,12 +312,13 @@ class NAICSProcessor:
             - sequence_number: The original sequence number for sorting.
             - source: The URL of the source file.
         """
-        filename = self.files[file_key]
+        files_ = self.files[file_key]
+        filename = files_["filename"]
+        url = files_["url"]
         file_path = self.data_dir / filename
         if not file_path.exists():
             print(f"Warning: Structure file not found at {file_path}, skipping...")
             return pd.DataFrame()
-
         try:
             df = pd.read_excel(
                 file_path,
@@ -263,7 +350,7 @@ class NAICSProcessor:
                 .drop_duplicates(subset="naics_code")
                 .reset_index(drop=True)
             )
-            df["source"] = urljoin(self.base_url, quote(filename))
+            df["source"] = url
 
             print(f"{filename}: loaded {len(df)} records.")
             return df
@@ -275,14 +362,16 @@ class NAICSProcessor:
     def _load_cross_references(self, file_key: str = "cross_references"):
         """Load NAICS Industry Cross-References excel sheet to build relationship mapping\n
         cols: Code | Cross-Reference"""
-        filename = self.files[file_key]
-        file_ = self.data_dir / filename
-        if not file_.exists():
+        files_ = self.files[file_key]
+        filename = files_["filename"]
+        url = files_["url"]
+        file_path = self.data_dir / filename
+        if not file_path.exists():
             print("Warning: Cross-references file not found, skipping...")
             return {}
 
         try:
-            df = pd.read_excel(file_, dtype=str).rename(columns=str.lower)
+            df = pd.read_excel(file_path, dtype=str).rename(columns=str.lower)
             # find code and cross-reference column names
             code_col = self._find_col(df, ["code"], 0)
             ref_text = self._find_col(df, ["cross", "refer"], 1)
@@ -314,8 +403,7 @@ class NAICSProcessor:
                 )
                 .to_dict()
             )
-
-            exploded["source"] = urljoin(self.base_url, quote(filename))
+            exploded["source"] = url
 
             # TODO: expose dataframe for analysis (degrees, clusters, etc)?
             # self.cross_ref_df = exploded.reset_index(drop=True)
@@ -329,11 +417,15 @@ class NAICSProcessor:
         return {}
 
     def _merge_naics_data(
-        self, desc_df: pd.DataFrame, codes_df: pd.DataFrame, structure_df: pd.DataFrame, cross_refs: Dict
+        self,
+        desc_df: pd.DataFrame,
+        codes_df: pd.DataFrame,
+        structure_df: pd.DataFrame,
+        cross_refs: Dict,
+        sba_df: pd.DataFrame,
     ):
         """Merge all NAICS data sources into comprehensive dataset"""
         df = desc_df.copy()  # start with descriptions as base
-
         # add validation from codes file
         if not codes_df.empty:
             valid_codes = set(codes_df["naics_code"].tolist())
@@ -345,11 +437,15 @@ class NAICSProcessor:
         if not structure_df.empty and "naics_code" in structure_df.columns:
             structure_info = structure_df.drop_duplicates("naics_code")
             # merge creates title_x from desc_df and title_y from structure_df
-            df = df.merge(structure_info, on="naics_code", how="outer", suffixes=("_desc", "_struct"))
+            df = df.merge(
+                structure_info,
+                on="naics_code",
+                how="left",
+                suffixes=("_desc", "_struct"),
+            )
             # description title first, structure title is fallback
             df["title"] = df["title_desc"].fillna(df["title_struct"])
             df = df.drop(columns=[col for col in df.columns if "_desc" in col or "_struct" in col])
-
             # extract change indicators if available
             change_cols = [
                 col for col in structure_info.columns if "change" in col.lower() or "indicator" in col.lower()
@@ -358,6 +454,13 @@ class NAICSProcessor:
                 df["has_change_indicator"] = ~df[change_cols].isnull().all(axis=1)
             else:
                 df["has_change_indicator"] = False
+
+        # add size standard data
+        if not sba_df.empty:
+            df = df.merge(sba_df, on="naics_code", how="left")
+        else:
+            df["size_standard_metric"] = None
+            df["size_standard_max"] = None
 
         # add hierarchy information
         df["level"] = df["naics_code"].str.len()
@@ -434,6 +537,8 @@ class NAICSProcessor:
                 "subsector": row["subsector"],
                 "industry_group": row["industry_group"],
                 "industry": row["industry"],
+                "size_standard_metric": row.get("size_standard_metric"),
+                "size_standard_max": row.get("size_standard_max"),
                 "related_codes": row["related_codes"],
                 "cross_ref_count": row["cross_ref_count"],
                 "defense_related": row["defense_related"],

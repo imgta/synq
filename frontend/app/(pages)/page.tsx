@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { SearchBar } from '@/components/SearchBar';
+import { DataRadarChart } from '@/components/dataviz/radar-chart';
 
 export default function Index() {
   const [input, setInput] = useState('');
@@ -27,9 +28,22 @@ export default function Index() {
   }
 
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col row-start-2 items-center sm:items-start">
-        <h1 className="text-4xl font-medium mb-4 font-">synQ Engine</h1>
+    <main className="max-w-7xl mx-auto px-6">
+      <div className="w-full max-w-4xl min-h-dvh sm:min-h-0 flex flex-col ">
+        <div className="pt-24 pb-16 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-muted-foreground text-sm mb-6">
+            <Sparkles className="size-3" />
+            <span>AI-powered defense contracting intelligence</span>
+          </div>
+          <h1 className="text-8xl mb-4 font-soehne font-medium">synQ</h1>
+        </div>
+        <SearchBar
+          input={input}
+          submitted={submitted}
+          setInput={setInput}
+          onSubmit={onSubmit}
+          onClear={onClear}
+        />
         <div className="flex flex-col w-full max-w-xl py-24 mx-auto stretch">
           {messages.map(m =>
             <div key={m.id} className="whitespace-pre-wrap">
@@ -45,16 +59,9 @@ export default function Index() {
               })}
             </div>
           )}
-
-          <SearchBar
-            input={input}
-            submitted={submitted}
-            setInput={setInput}
-            onSubmit={onSubmit}
-            onClear={onClear}
-          />
         </div>
-      </main>
-    </div>
+        <DataRadarChart />
+      </div>
+    </main>
   );
 }

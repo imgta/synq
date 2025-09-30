@@ -1,5 +1,7 @@
 import { type Metadata } from 'next';
+import { Metric, Untitled, Soehne } from '@/assets/fonts';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { ThemeProvider } from '@/components/ui/theme-provider';
 import '@/styles/globals.css';
 
 const geistSans = Geist({
@@ -18,9 +20,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${Metric.variable} ${Untitled.variable} ${Soehne.variable} antialiased`}>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

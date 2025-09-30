@@ -1,4 +1,4 @@
-import { drizzleDB, tables, rootDir, inDev, sql } from '@/lib/db';
+import { drizzleDB, tables, rootDir, inDev, sql, type NewNaics } from '@/lib/db';
 import { generateEmbedding } from '@/lib/embed';
 import { loadEnvConfig } from '@next/env';
 import { consola } from 'consola';
@@ -7,11 +7,11 @@ import { apiFetch } from '@/api';
 loadEnvConfig(rootDir, inDev);
 
 export async function seedNAICS() {
-  consola.start('Seeding with NAICS data from census.gov...');
+  consola.start('Seeding NAICS data from census.gov, sba.gov...');
   const { data } = await apiFetch('/naics/data');
-  const naicsData = data.lookups.naics.filter((n: any) => n && n.code);
+  const naicsData = data.lookups.naics.filter((n: NewNaics) => n && n.code);
 
-  const records: any[] = [];
+  const records: NewNaics[] = [];
   const EMBEDDING_CONCURRENCY = 100;
 
   consola.info(`Generating ${naicsData.length} embeddings...`);
@@ -19,7 +19,7 @@ export async function seedNAICS() {
     const chunk = naicsData.slice(i, i + EMBEDDING_CONCURRENCY);
 
     const embeddedChunk = await Promise.all(
-      chunk.map(async (n: any) => {
+      chunk.map(async (n: NewNaics) => {
         const embeddingText = `${n.title}: ${n.description}`;
         const vector = await generateEmbedding(embeddingText);
         return {
@@ -31,6 +31,8 @@ export async function seedNAICS() {
           subsector: n.subsector,
           industry_group: n.industry_group,
           industry: n.industry,
+          size_standard_metric: n.size_standard_metric,
+          size_standard_max: n.size_standard_max,
           related_codes: n.related_codes,
           cross_ref_count: n.cross_ref_count,
           defense_related: n.defense_related,
@@ -57,6 +59,16 @@ export async function seedNAICS() {
         .onConflictDoUpdate({
           target: tables.naics.code,
           set: {
+            description: sql`excluded.description`,
+            title: sql`excluded.title`,
+            size_standard_metric: sql`excluded.size_standard_metric`,
+            size_standard_max: sql`excluded.size_standard_max`,
+            related_codes: sql`excluded.related_codes`,
+            cross_ref_count: sql`excluded.cross_ref_count`,
+            defense_related: sql`excluded.defense_related`,
+            defense_keyword_count: sql`excluded.defense_keyword_count`,
+            validated: sql`excluded.validated`,
+            change_indicator: sql`excluded.change_indicator`,
             embedding: sql`excluded.embedding`,
             updated_at: new Date(),
           },

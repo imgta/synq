@@ -29,7 +29,11 @@ export function drizzleDB() {
   return _db;
 }
 
-const { companies } = tables;
+const { companies, programs, opportunities, awards, naics } = tables;
 export type Company = typeof companies.$inferSelect;
 export type NewCompany = typeof companies.$inferInsert;
+export type NewNaics = typeof naics.$inferInsert;
+export type NewProgram = typeof programs.$inferInsert;
+export type NewOpportunity = typeof opportunities.$inferInsert;
+export type NewAward = typeof awards.$inferInsert;
 export { and, eq, ilike, inArray, like, or, sql } from 'drizzle-orm';
