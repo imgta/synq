@@ -97,6 +97,7 @@ export const opportunities = pgTable('opportunities', {
   posted_date: timestamp('posted_date', { precision: 6, withTimezone: true }).notNull(),
   response_deadline: timestamp('response_deadline', { precision: 6, withTimezone: true }),
   updated_date: timestamp('updated_date', { precision: 6, withTimezone: true }),
+  
   award_data: jsonb('award_data').$type<{
     number?: string;
     amount?: number;
@@ -142,6 +143,7 @@ export const opportunities = pgTable('opportunities', {
   additional_info_required: boolean('additional_info_required').default(false),
   // AI features
   embedding: vector('embedding', { dimensions: EMBEDDING_DIMENSIONS }),
+  estimated_value: bigint('estimated_value', {mode: 'number'}), // AI-extracted contract estimated value from description text, attachment docs
   key_requirements: jsonb('key_requirements').$type<string[]>().default([]), // AI-extracted key requirements
   secondary_naics: jsonb('secondary_naics').$type<string[]>().default([]), // AI-parse description text to find ancillary NAICS codes
   complexity_score: decimal('complexity_score', { precision: 3, scale: 2 }), // 0.00-1.00 AI-assessed complexity

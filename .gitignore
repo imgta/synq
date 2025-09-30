@@ -133,3 +133,4 @@ dist
 
 .devlog.md
 .test*
+.vscode/
