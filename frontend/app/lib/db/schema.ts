@@ -1,41 +1,42 @@
 import { pgTable, boolean, text, integer, bigint, pgEnum, decimal, timestamp, jsonb, vector, index, primaryKey } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
-const EMBEDDING_DIMENSIONS = 384;
+const EMBEDDING_DIMENSIONS = {
+  summary: 384,
+  fulltext: 768,
+} as const;
 
 function genUUID(length: number) {
   return crypto.randomUUID().replace(/-/g, '').slice(0, length);
 }
 
 export const sizeMetricEnum = pgEnum('size_standard_metric', ['receipts', 'employees']);
+export const naicsLevelEnum = pgEnum('level', ['sector', 'subsector', 'industry_group', 'naics_industry', 'national_industry']);
 
 export const naics = pgTable('naics', {
   code: text('code').primaryKey(), // 6-digit padded code
   description: text('description').notNull(),
   title: text('title'),
-  level: integer('level').notNull(), // 2-6 (specificity)
+  level: naicsLevelEnum().notNull(), // specificity, 'sector', 'subsector', 'industry_group'
   sector: text('sector').notNull(), // first 2 digits
-  subsector: text('subsector'),
-  industry_group: text('industry_group'),
-  industry: text('industry'),
+  trilateral: boolean('trilateral'), // under Canada, US, Mexico trilateral agreement
   // size standard metrics for small business set-asides qualification
   size_standard_metric: sizeMetricEnum(), // receipts | employees
   size_standard_max: bigint('size_standard_max', { mode: 'number' }), // revenue or headcount
-  // relationships
   related_codes: jsonb('related_codes').$type<string[]>().default([]),
   cross_ref_count: integer('cross_ref_count').default(0),
   defense_related: boolean('defense_related').default(false),
   defense_keyword_count: integer('defense_keyword_count').default(0),
   validated: boolean('validated').default(true),
   change_indicator: text('change_indicator'),
-  embedding: vector('embedding', { dimensions: EMBEDDING_DIMENSIONS }),
+  embedding_summary: vector('embedding_summary', { dimensions: EMBEDDING_DIMENSIONS.summary }),
   created_at: timestamp('created_at', { precision: 6, withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { precision: 6, withTimezone: true }).defaultNow().notNull(),
 }, table => [
   index('naics_sector_idx').on(table.sector),
   index('naics_level_idx').on(table.level),
   index('naics_defense_idx').on(table.defense_related),
-  index('naics_embedding_idx').using('hnsw', table.embedding.op('vector_cosine_ops')),
+  index('naics_embedding_summary_idx').using('hnsw', table.embedding_summary.op('vector_cosine_ops')),
 ]);
 
 export const companies = pgTable('companies', {
@@ -48,18 +49,17 @@ export const companies = pgTable('companies', {
   employee_count: integer('employee_count'),
   annual_revenue: bigint('annual_revenue', { mode: 'number' }),
   sba_certifications: jsonb('sba_certifications').$type<'8A' | 'WOSB' | 'EDWOSB' | 'VOSB' | 'SDVOSB' | 'HZ'[]>(),
-  // capability signals for AI matching
   certifications: jsonb('certifications').$type<string[]>(), // ISO 9001, CMMC, FedRAMP
   past_performance: jsonb('past_performance').$type<{
     rating?: number; // 0-5 scale
     notable_contracts?: string[]; // ['$12M USAF', 'VA EHR integration']
   }>(),
-  embedding: vector('embedding', { dimensions: EMBEDDING_DIMENSIONS }),
+  embedding_summary: vector('embedding_summary', { dimensions: EMBEDDING_DIMENSIONS.summary }),
   created_at: timestamp('created_at', { precision: 6, withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { precision: 6, withTimezone: true }).defaultNow().notNull(),
 }, table => [
   // neon supports HNSW indexes for vector dimension sizes up to 2000
-  index('companies_embedding_idx').using('hnsw', table.embedding.op('vector_cosine_ops')),
+  index('companies_embedding_summary_idx').using('hnsw', table.embedding_summary.op('vector_cosine_ops')),
 ]);
 
 /**
@@ -97,7 +97,6 @@ export const opportunities = pgTable('opportunities', {
   posted_date: timestamp('posted_date', { precision: 6, withTimezone: true }).notNull(),
   response_deadline: timestamp('response_deadline', { precision: 6, withTimezone: true }),
   updated_date: timestamp('updated_date', { precision: 6, withTimezone: true }),
-  
   award_data: jsonb('award_data').$type<{
     number?: string;
     amount?: number;
@@ -142,8 +141,9 @@ export const opportunities = pgTable('opportunities', {
   active: boolean('active').default(true).notNull(), // mapped from 'Yes' | 'No' string
   additional_info_required: boolean('additional_info_required').default(false),
   // AI features
-  embedding: vector('embedding', { dimensions: EMBEDDING_DIMENSIONS }),
-  estimated_value: bigint('estimated_value', {mode: 'number'}), // AI-extracted contract estimated value from description text, attachment docs
+  embedding_summary: vector('embedding_summary', { dimensions: EMBEDDING_DIMENSIONS.summary }),
+  embedding_fulltext: vector('embedding_fulltext', { dimensions: EMBEDDING_DIMENSIONS.fulltext }),
+  estimated_value: bigint('estimated_value', { mode: 'number' }), // AI-extracted value from description text, attachment docs, etc.
   key_requirements: jsonb('key_requirements').$type<string[]>().default([]), // AI-extracted key requirements
   secondary_naics: jsonb('secondary_naics').$type<string[]>().default([]), // AI-parse description text to find ancillary NAICS codes
   complexity_score: decimal('complexity_score', { precision: 3, scale: 2 }), // 0.00-1.00 AI-assessed complexity
@@ -161,7 +161,8 @@ export const opportunities = pgTable('opportunities', {
   // composite indexes for commonly paired filters (active + ?)
   index('opp_active_naics_idx').on(table.active, table.naics_code),
   index('opp_active_posted_idx').on(table.active, table.posted_date),
-  index('opp_embedding_idx').using('hnsw', table.embedding.op('vector_cosine_ops')),
+  index('opp_embedding_summary_idx').using('hnsw', table.embedding_summary.op('vector_cosine_ops')),
+  index('opp_embedding_fulltext_idx').using('hnsw', table.embedding_fulltext.op('vector_cosine_ops')),
 ]);
 
 
@@ -208,10 +209,12 @@ export const programs = pgTable('programs', {
   // core AI prompt signals
   key_naics: jsonb('key_naics').$type<string[]>(), // primary NAICS codes for program
   prime_contractors: jsonb('prime_contractors').$type<string[]>(), // who typically wins
+  embedding_summary: vector('embedding_summary', { dimensions: EMBEDDING_DIMENSIONS.summary }),
   created_at: timestamp('created_at', { precision: 6, withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { precision: 6, withTimezone: true }).defaultNow().notNull(),
 }, table => [
   index('programs_code_idx').on(table.code),
+  index('programs_embedding_summary_idx').using('hnsw', table.embedding_summary.op('vector_cosine_ops')),
 ]);
 
 /**
@@ -245,7 +248,7 @@ export const awards = pgTable('awards', {
   id: text('id').primaryKey().$defaultFn(() => genUUID(20)),
   program_code: text('program_code').references(() => programs.code, { onDelete: 'set null' }),
   naics_code: text('naics_code').notNull().references(() => naics.code, { onDelete: 'cascade' }),
-  contract_number: text('contract_number').notNull(),
+  contract_number: text('contract_number').notNull().unique(),
   awarded_date: timestamp('awarded_date', { mode: 'date' }).notNull(),
   // matchmaking signals
   awardee_uei: text('awardee_uei').notNull(), // prime contractor who won

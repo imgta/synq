@@ -1,0 +1,1 @@
+ALTER TABLE "awards" ADD CONSTRAINT "awards_contract_number_unique" UNIQUE("contract_number");

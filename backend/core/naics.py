@@ -12,6 +12,34 @@ from pydantic import BaseModel
 warnings.filterwarnings("ignore")
 
 
+def extract_html_bullets(raw_html: str):
+    if not isinstance(raw_html, str) or "<" not in raw_html.lower():
+        return raw_html or ""
+    import html, re
+    from bs4 import BeautifulSoup
+
+    raw_html = html.unescape(raw_html)
+    soup = BeautifulSoup(raw_html, "html.parser")
+    for br in soup.find_all("br"):
+        br.replace_with("\n")
+    dts = soup.find_all("dt")
+    if not dts:  # nothing to extract
+        return soup.get_text(" ", strip=True)
+    bullets = []
+    for dt in dts:
+        line = dt.get_text("\n", strip=True)
+        line = re.sub(r"\s+", " ", line).replace("\n", " ").rstrip(" ;")
+        bullets.append(line)
+    return "; ".join(bullets)
+
+
+def zero_pad(code):
+    if pd.isna(code):
+        return None
+    s = str(code).strip()
+    return s.ljust(6, "0") if s.isdigit() else None
+
+
 class NAICSResponse(BaseModel):
     success: bool
     message: str
@@ -48,8 +76,10 @@ class NAICSProcessor:
             },
         }
         self.cache_file = self.data_dir / "naics_lookups.json"
-        # lambda function to right-pad NAICS codes with '0' to 6 digits
-        self.zero_pad = lambda naics_code: str(naics_code).strip().ljust(6, "0")
+
+        # cleanup functions
+        self.zero_pad = zero_pad
+        self.parse_html = extract_html_bullets
 
     def _to_native_py(self, obj):
         """Recursive util to convert NumPy/pandas types to native Python types."""
@@ -232,51 +262,83 @@ class NAICSProcessor:
 
     def _load_descriptions(self, file_key: str = "descriptions") -> pd.DataFrame:
         """
-        Load the 2022_NAICS_Descriptions.xlsx sheet.\n
+        Load and process the 2022_NAICS_Descriptions.xlsx dataset.\n
         cols: Code | Title | Description
         """
-        file_info = self.files[file_key]
-        filename = file_info["filename"]
-        url = file_info["url"]
-        file_path = self.data_dir / filename
-        if not file_path.exists():
-            raise FileNotFoundError(f"Descriptions file not found: {file_path}")
+        meta = self.files[file_key]
+        path_ = self.data_dir / meta["filename"]
+        if not path_.exists():
+            raise FileNotFoundError(f"Descriptions file not found: {path_}")
 
-        df = pd.read_excel(io=file_path, dtype=str).rename(columns=str.lower)
+        df = pd.read_excel(io=path_, dtype=str).rename(columns=str.lower)
 
-        # find column header names
-        code_col = self._find_col(df, ["code"], 0)
-        title_col = self._find_col(df, ["title"], 1)
-        desc_col = self._find_col(df, ["description"], 2)
-        if not (code_col and title_col and desc_col):
-            raise ValueError("Could not find required NAICS code, title, and description columns")
+        # find columns
+        c_code = self._find_col(df, ["code"], 0)
+        c_title = self._find_col(df, ["title"], 1)
+        c_desc = self._find_col(df, ["description"], 2)
+        if not all([c_code, c_title, c_desc]):
+            raise ValueError("Required columns missing")
 
-        # right-pad NAICS codes with '0' to 6 digits
-        df[code_col] = df[code_col].apply(self.zero_pad)
-
-        # strip trailing "T" from title
-        title = df[title_col].fillna("").str.removesuffix("T").str.strip()
-        # cleanup null descriptions
-        description = (
-            df[desc_col].fillna("").str.replace("NULL", "").str.replace(r"\s+", " ", regex=True).str.strip()
+        src = (
+            df[[c_code, c_title, c_desc]]
+            .rename(columns={c_code: "raw_code", c_title: "title", c_desc: "description"})
+            .fillna("")
+            .assign(
+                raw_code=lambda d: d.raw_code.str.strip(),
+                trilateral=lambda d: d.title.str.endswith("T"),
+                title_clean=lambda d: d.title.str.rstrip("T").str.strip(),
+                desc_clean=(
+                    lambda d: (
+                        d.description.str.replace("NULL", "", regex=False)
+                        .str.replace(r"\n{2,}", "\n", regex=True)  # single new lines
+                        .str.replace(r"[ \t\r\f\v]+", " ", regex=True)  # single spaces
+                        .str.strip()
+                    )
+                ),
+            )
         )
-        # combine title + description column text in a new description column
-        df[desc_col] = np.where(
-            description.ne(""),
-            title + " - " + description,
-            title,
+
+        redirect_re = r"(?i)^see\s+industry\s+description\s+for\s+(\d{5,6})\.?$"
+        is_redirect = src.desc_clean.str.fullmatch(redirect_re)
+        src = src.loc[~is_redirect].copy()
+
+        hyphen_mask = src.raw_code.str.fullmatch(r"\d{2}-\d{2}")
+        hyphen_rows = (
+            src.loc[hyphen_mask]
+            .assign(
+                code_str=lambda d: d.raw_code.str.split("-").apply(
+                    lambda ab: [f"{i}" for i in range(int(ab[0]), int(ab[1]) + 1)]
+                )
+            )
+            .explode("code_str", ignore_index=True)
         )
-        # rename, cite, and return clean dataframe
-        df[title_col] = title
-        df = (
-            df[[code_col, title_col, desc_col]]
-            .rename(columns={code_col: "naics_code", title_col: "title", desc_col: "description"})
-            .drop_duplicates(subset="naics_code")
+        rows = src.loc[~hyphen_mask].assign(
+            code_str=lambda d: d.raw_code.str.extract(r"(\d{2,6})", expand=False)
+        )
+        data = pd.concat([hyphen_rows, rows], ignore_index=True, copy=False)
+        data = data[data.code_str.notna()]
+
+        LEVEL_MAP = {
+            2: "sector",
+            3: "subsector",
+            4: "industry_group",
+            5: "naics_industry",
+            6: "national_industry",
+        }
+
+        data = data.assign(
+            naics_code=lambda d: d.code_str.apply(self.zero_pad),
+            level=lambda d: d.code_str.str.len().map(LEVEL_MAP).fillna("unknown"),
+        )
+        result = (
+            data[["naics_code", "title_clean", "desc_clean", "trilateral", "level"]]
+            .rename(columns={"title_clean": "title", "desc_clean": "description"})
+            .assign(source=meta["url"])
+            .drop_duplicates(subset="naics_code", keep="first")
             .reset_index(drop=True)
         )
-        df["source"] = url
-        print(f"{filename}: loaded {len(df)} records.")
-        return df
+        print(f"{meta['filename']}: loaded {len(result)} records.")
+        return result
 
     def _load_2_6_digit_codes(self, file_key: str = "2_6_digit_codes") -> pd.DataFrame:
         """
@@ -418,63 +480,57 @@ class NAICSProcessor:
 
     def _merge_naics_data(
         self,
-        desc_df: pd.DataFrame,
+        descript_df: pd.DataFrame,
         codes_df: pd.DataFrame,
         structure_df: pd.DataFrame,
-        cross_refs: Dict,
+        cross_refs: Dict[str, list],
         sba_df: pd.DataFrame,
     ):
         """Merge all NAICS data sources into comprehensive dataset"""
-        df = desc_df.copy()  # start with descriptions as base
-        # add validation from codes file
+        df = descript_df.copy()  # start with descriptions as base
+
+        # validation from codes
         if not codes_df.empty:
             valid_codes = set(codes_df["naics_code"].tolist())
             df["validated"] = df["naics_code"].isin(valid_codes)
         else:
             df["validated"] = True
 
-        # add structure info
+        # structure info
         if not structure_df.empty and "naics_code" in structure_df.columns:
-            structure_info = structure_df.drop_duplicates("naics_code")
-            # merge creates title_x from desc_df and title_y from structure_df
+            struct = structure_df.drop_duplicates("naics_code")
+            # merge creates title_x from descript_df and title_y from structure_df
             df = df.merge(
-                structure_info,
+                struct,
                 on="naics_code",
                 how="left",
                 suffixes=("_desc", "_struct"),
             )
             # description title first, structure title is fallback
             df["title"] = df["title_desc"].fillna(df["title_struct"])
+
             df = df.drop(columns=[col for col in df.columns if "_desc" in col or "_struct" in col])
             # extract change indicators if available
             change_cols = [
-                col for col in structure_info.columns if "change" in col.lower() or "indicator" in col.lower()
+                col for col in struct.columns if "change" in col.lower() or "indicator" in col.lower()
             ]
-            if change_cols:
-                df["has_change_indicator"] = ~df[change_cols].isnull().all(axis=1)
-            else:
-                df["has_change_indicator"] = False
+            df["has_change_indicator"] = False if not change_cols else ~df[change_cols].isna().all(axis=1)
 
-        # add size standard data
+        # SBA size standards
         if not sba_df.empty:
             df = df.merge(sba_df, on="naics_code", how="left")
         else:
-            df["size_standard_metric"] = None
-            df["size_standard_max"] = None
+            df[["size_standard_metric", "size_standard_max"]] = None
 
-        # add hierarchy information
-        df["level"] = df["naics_code"].str.len()
-        df["sector"] = df["naics_code"].str[:2]
-        df["subsector"] = df["naics_code"].apply(lambda x: x[:3] if len(x) >= 3 else None)
-        df["industry_group"] = df["naics_code"].apply(lambda x: x[:4] if len(x) >= 4 else None)
-        df["industry"] = df["naics_code"].apply(lambda x: x[:5] if len(x) >= 5 else None)
+        # sector info
+        df["sector"] = df["naics_code"].str.rstrip("0").str[:2]
 
-        # add cross-reference relationships
+        # cross-reference info
         df["related_codes"] = (
-            df["naics_code"].map(cross_refs).fillna("").apply(lambda x: x if isinstance(x, list) else [])
+            df["naics_code"].map(cross_refs).apply(lambda x: x if isinstance(x, list) else [])
         )
-        df["has_cross_refs"] = df["related_codes"].apply(len) > 0
-        df["cross_ref_count"] = df["related_codes"].apply(len)
+        df["cross_ref_count"] = df["related_codes"].str.len()
+        df["has_cross_refs"] = df["cross_ref_count"] > 0
 
         # add defense analysis with enhanced keywords
         defense_keywords = [
@@ -514,29 +570,22 @@ class NAICSProcessor:
             "support",
             "services",
         ]
-
         desc_lower = df["description"].fillna("").str.lower()
-        df["defense_related"] = desc_lower.apply(lambda x: any(keyword in x for keyword in defense_keywords))
+        df["defense_keyword_count"] = desc_lower.apply(lambda txt: sum(k in txt for k in defense_keywords))
+        df["defense_related"] = df["defense_keyword_count"] > 0
 
-        # count defense keywords for scoring
-        df["defense_keyword_count"] = desc_lower.apply(
-            lambda x: sum(1 for keyword in defense_keywords if keyword in x)
-        )
         return df
 
     def generate_lookups(self, df: pd.DataFrame):
-        """Generate comprehensive, aggregation of NAICS code records data"""
-        naics_data = []
-        for _, row in df.iterrows():
-            naics_data.append({
+        """Generate comprehensive, aggregation of NAICS code data as Python-native, lookup dictionary."""
+        naics_data = [
+            {
                 "code": row["naics_code"],
-                "description": row["description"],
                 "title": row.get("title", ""),
+                "description": row["description"],
                 "level": row["level"],
                 "sector": row["sector"],
-                "subsector": row["subsector"],
-                "industry_group": row["industry_group"],
-                "industry": row["industry"],
+                "trilateral": row.get("trilateral", False),
                 "size_standard_metric": row.get("size_standard_metric"),
                 "size_standard_max": row.get("size_standard_max"),
                 "related_codes": row["related_codes"],
@@ -545,7 +594,11 @@ class NAICSProcessor:
                 "defense_keyword_count": row["defense_keyword_count"],
                 "validated": row.get("validated", True),
                 "change_indicator": row.get("change_indicator", None),
-            })
+                "source": row.get("source", None),
+            }
+            for _, row in df.iterrows()
+        ]
+
         # industry sector info with enhanced labels
         sectors = {
             "11": "Agriculture, Forestry, Fishing and Hunting",
@@ -575,13 +628,13 @@ class NAICSProcessor:
         }
         # some lightweight indexes for faster filtering
         indexes = {
-            "defense_codes": df[df["defense_related"]]["naics_code"].tolist(),
-            "codes_with_cross_refs": df[df["has_cross_refs"]]["naics_code"].tolist(),
-            "high_defense_codes": df[df["defense_keyword_count"] >= 3]["naics_code"].tolist(),
+            "defense_codes": df.loc[df["defense_related"], "naics_code"].tolist(),
+            "codes_with_cross_refs": df.loc[df["has_cross_refs"], "naics_code"].tolist(),
+            "high_defense_codes": df.loc[df["defense_keyword_count"] >= 3, "naics_code"].tolist(),
         }
         metadata = {
-            "total_codes": len(df),
-            "defense_count": len(df[df["defense_related"]]),
+            "total_codes": int(len(df)),
+            "defense_count": int(df["defense_related"].sum()),
             "avg_cross_refs": float(df["cross_ref_count"].mean()),
             "sectors": sectors,
             "processed_at": datetime.now().isoformat(),
@@ -712,7 +765,7 @@ async def get_naics_code_detail(naics_code: str):
 
 @router.get("/naics/data")
 async def get_naics_data(force_refresh: bool = False):
-    """Get comprehensive NAICS data, including lookups and optional visualizations."""
+    """Get comprehensive NAICS data aggregated in a lookup map."""
     try:
         processor = get_processor()
         data = None if force_refresh else processor._load_valid_cache()

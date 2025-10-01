@@ -30,11 +30,15 @@ export function drizzleDB() {
 }
 
 const { companies, programs, opportunities, awards, naics } = tables;
+export type Naics = typeof naics.$inferSelect;
 export type Company = typeof companies.$inferSelect;
-export type NewCompany = typeof companies.$inferInsert;
+export type Program = typeof opportunities.$inferSelect;
+export type Opportunity = typeof opportunities.$inferSelect;
+export type Award = typeof awards.$inferSelect;
+
 export type NewNaics = typeof naics.$inferInsert;
+export type NewCompany = typeof companies.$inferInsert;
 export type NewProgram = typeof programs.$inferInsert;
-export type Opportunity = typeof opportunities.$inferSelect
 export type NewOpportunity = typeof opportunities.$inferInsert;
 export type NewAward = typeof awards.$inferInsert;
 export { and, eq, ilike, inArray, like, or, sql } from 'drizzle-orm';

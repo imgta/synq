@@ -4,7 +4,7 @@ export const MOCK_PROGRAMS = [
     name: 'Golden Dome Integrated Air and Missile Defense',
     description: 'Multi-layered air and missile defense system integrating advanced radar networks, AI-powered threat classification, interceptor coordination, and battle management command and control. Protects critical infrastructure and forward-deployed forces from hypersonic missiles, cruise missiles, UAS swarms, and ballistic threats. Leverages machine learning for real-time threat assessment and autonomous engagement sequencing.',
     estimated_value: 18_500_000_000,
-    key_naics: ['541512', '541511', '334220', '541712', '336414'],
+    key_naics: ['541512', '541511', '334220', '541710', '336414'],
     prime_contractors: ['Lockheed Martin', 'Raytheon Technologies', 'Northrop Grumman'],
   },
   {
@@ -36,7 +36,7 @@ export const MOCK_PROGRAMS = [
     name: 'CBRN Defense Modernization Initiative',
     description: 'Next-generation chemical, biological, radiological, and nuclear defense systems. Autonomous detection sensors, rapid diagnostic platforms, biosurveillance data fusion, modeling and simulation for threat prediction, and medical countermeasure distribution logistics. Emphasis on standoff detection, low false-positive rates, and integration with joint warning networks.',
     estimated_value: 5_200_000_000,
-    key_naics: ['541712', '339112', '541380', '488510'],
+    key_naics: ['541710', '339112', '541380', '488510'],
     prime_contractors: ['Battelle Memorial Institute', 'Amentum', 'CSRA'],
   },
 ];
@@ -46,7 +46,7 @@ export const MOCK_COMPANIES = [
   {
     name: 'Contrail Analytics',
     description: 'Contrail Analytics develops flight data monitoring and anomaly detection systems for unmanned aerial vehicles (UAVs) and aerospace fleets. We integrate advanced telemetry analytics with predictive maintenance algorithms, enabling early identification of risks before they become failures. Our platforms enhance mission safety, extend aircraft lifespans, and support both defense and civilian aviation programs with reliable, realtime insights required of high-stakes airspace operations.',
-    primary_naics: '541712',
+    primary_naics: '541710',
     other_naics: ['336411', '541511', '541513'],
     uei: 'CNTRAIL85M',
     sba_certifications: [],
@@ -165,7 +165,7 @@ export const MOCK_COMPANIES = [
     name: 'Stylefoam Solutions',
     description: 'Stylefoam Solutions manufactures biodegradable and compostable packaging engineered for durability in field operations. Products replace single-use plastics in MREs, logistics supply kits, and cafeteria services, reducing waste while maintaining reliability. Material science innovation and scalable production capabilities support compliance with federal sustainability mandates and long-term environmental objectives.',
     primary_naics: '326111', // Plastics Bag and Pouch Manufacturing
-    other_naics: ['325211', '541712'],
+    other_naics: ['325211', '541710'],
     sba_certifications: ['8A'],
     employee_count: 150,
     annual_revenue: 22_000_000,
@@ -180,7 +180,7 @@ export const MOCK_COMPANIES = [
   {
     name: 'Synonym Bio',
     description: 'Synonym Bio conducts techno-economic analysis to evaluate the scalability and cost efficiency of biomanufacturing processes. Modeling efforts assess emerging feedstocks, enzymes, and synthetic biology pathways, identifying bottlenecks and guiding resource allocation. Insights enable federal agencies and partners to evaluate commercialization pathways and transition from lab-scale to industrial-scale bioproduction.',
-    primary_naics: '541712', // Research and Development in the Physical, Engineering, and Life Sciences
+    primary_naics: '541710', // Research and Development in the Physical, Engineering, and Life Sciences
     other_naics: ['541618', '325414'],
     sba_certifications: [],
     employee_count: 25,
@@ -213,7 +213,7 @@ export const MOCK_COMPANIES = [
   {
     name: 'Guardian Geospatial',
     description: 'Geospatial intelligence (GEOINT) and remote sensing analytics. Processes satellite imagery, LiDAR, hyperspectral data, and SAR for terrain analysis, change detection, and mission planning. Automated feature extraction using deep learning, 3D reconstruction, and temporal analysis. Supports NGA, service-level intelligence centers, and tactical planning cells.',
-    primary_naics: '541712',
+    primary_naics: '541710',
     other_naics: ['541370', '541990'],
     uei: 'GUARDIAN58M',
     sba_certifications: [],
@@ -230,7 +230,7 @@ export const MOCK_COMPANIES = [
   {
     name: 'BioShield Innovations',
     description: 'CBRN detection, biosurveillance, and medical countermeasures. Develops rapid diagnostic systems, environmental monitoring sensors, and data fusion platforms for biological threat detection. Technologies include PCR-based pathogen identification, aerosol samplers, and network-enabled early warning systems. Supports Joint Program Executive Office for CBRN Defense.',
-    primary_naics: '541712',
+    primary_naics: '541710',
     other_naics: ['339112', '541380'],
     uei: 'BIOSHIELD68M',
     sba_certifications: [],
@@ -298,7 +298,7 @@ export const MOCK_COMPANIES = [
     name: 'Sentinel Microsystems',
     description: 'Design and manufacture of compact radar systems, RF transceivers, and sensor arrays for air defense and electronic warfare. GaN-based solid-state radar technology, AESA antenna modules, and software-defined radio platforms. Expertise in miniaturization for UAV integration and mobile platforms. Women-owned small business with focus on next-generation phased array systems.',
     primary_naics: '334220', // Radio and Television Broadcasting and Wireless Communications Equipment Manufacturing
-    other_naics: ['334290', '541712'],
+    other_naics: ['334290', '541710'],
     uei: 'SENTINEL92M',
     sba_certifications: ['EDWOSB'],
     employee_count: 92,
@@ -356,19 +356,15 @@ export const MOCK_OPPORTUNITIES = [
     posted_date: new Date('2025-01-15'),
     response_deadline: new Date('2025-03-30'),
     naics_code: '541512',
-    classification_code: 'D302', // IT and Telecom - Systems Development
-    set_aside_code: null, // Full and open competition
+    classification_code: 'D302',
+    set_aside_code: null,
     set_aside_description: null,
     full_parent_path_name: 'Department of Defense.Department of the Army.U.S. Army Contracting Command',
     organization_type: 'OFFICE',
-    office_address: {
-      city: 'Redstone Arsenal',
-      state: 'AL',
-      zipcode: '35898',
-    },
+    office_address: { city: 'Redstone Arsenal', state: 'AL', zipcode: '35898' },
     additional_info_required: true,
     ui_link: 'https://sam.gov/opp/GD-2025-001/view',
-    secondary_naics: ['541511', '334220', '541712'],
+    secondary_naics: ['541511', '334220', '541710'],
     key_requirements: [
       'FedRAMP High authorization',
       'Real-time sensor data fusion from 50+ feeds',
@@ -377,8 +373,9 @@ export const MOCK_OPPORTUNITIES = [
       'Active TS/SCI clearances for 80% of workforce',
     ],
     complexity_score: '0.92',
+    // Rationale: Large-scale, multi-year C2 software for a major defense program. High complexity and clearance requirements.
+    estimated_value: 85_000_000,
   },
-
   {
     notice_id: 'GD-2025-002',
     solicitation_number: 'W31P4Q-25-R-0118',
@@ -388,18 +385,14 @@ export const MOCK_OPPORTUNITIES = [
     posted_date: new Date('2025-02-01'),
     response_deadline: new Date('2025-04-15'),
     naics_code: '334220',
-    classification_code: '5895', // Radar Systems and Equipment
+    classification_code: '5895',
     set_aside_code: 'WOSB',
     set_aside_description: 'Women-Owned Small Business Set-Aside',
     full_parent_path_name: 'Department of Defense.Department of the Army.Program Executive Office Missiles and Space',
     organization_type: 'OFFICE',
-    office_address: {
-      city: 'Huntsville',
-      state: 'AL',
-      zipcode: '35809',
-    },
+    office_address: { city: 'Huntsville', state: 'AL', zipcode: '35809' },
     ui_link: 'https://sam.gov/opp/GD-2025-002/view',
-    secondary_naics: ['541712', '541511'], // May need R&D and embedded software
+    secondary_naics: ['541710', '541511'],
     key_requirements: [
       'AS9100D certified facility',
       'GaN-based solid-state radar technology',
@@ -408,8 +401,9 @@ export const MOCK_OPPORTUNITIES = [
       'Women-owned small business',
     ],
     complexity_score: '0.85',
+    // Rationale: Advanced hardware (GaN AESA modules). High unit cost for 120 units, plus R&D and manufacturing setup.
+    estimated_value: 50_000_000,
   },
-
   // JADC2 PROGRAM
   {
     notice_id: 'JADC2-2025-003',
@@ -425,17 +419,14 @@ export const MOCK_OPPORTUNITIES = [
     set_aside_description: 'Service-Disabled Veteran-Owned Small Business Set-Aside',
     full_parent_path_name: 'Department of Defense.Office of the Secretary of Defense.Chief Digital and AI Office',
     organization_type: 'OFFICE',
-    office_address: {
-      city: 'Washington',
-      state: 'DC',
-      zipcode: '20301',
-    },
+    office_address: { city: 'Washington', state: 'DC', zipcode: '20301' },
     ui_link: 'https://sam.gov/opp/JADC2-2025-003/view',
     secondary_naics: [],
     key_requirements: [],
     complexity_score: null,
+    // Rationale: Niche but critical software for JADC2. Involves complex NLP, AI, and high-security integration.
+    estimated_value: 15_000_000,
   },
-
   {
     notice_id: 'JADC2-2025-004',
     solicitation_number: 'HC1028-25-R-0145',
@@ -445,16 +436,12 @@ export const MOCK_OPPORTUNITIES = [
     posted_date: new Date('2025-02-10'),
     response_deadline: new Date('2025-04-25'),
     naics_code: '541512',
-    classification_code: 'D317', // IT and Telecom - Cyber and Data Security
+    classification_code: 'D317',
     set_aside_code: 'SBA',
     set_aside_description: '8(a) Small Disadvantaged Business Set-Aside',
     full_parent_path_name: 'Department of Defense.Office of the Secretary of Defense.Defense Information Systems Agency',
     organization_type: 'OFFICE',
-    office_address: {
-      city: 'Fort Meade',
-      state: 'MD',
-      zipcode: '20755',
-    },
+    office_address: { city: 'Fort Meade', state: 'MD', zipcode: '20755' },
     ui_link: 'https://sam.gov/opp/JADC2-2025-004/view',
     secondary_naics: ['541513', '541519'],
     key_requirements: [
@@ -464,8 +451,9 @@ export const MOCK_OPPORTUNITIES = [
       'Secret clearance for installation teams',
     ],
     complexity_score: '0.68',
+    // Rationale: Hardware deployment at scale (200+ nodes) plus sustainment. Value driven by hardware costs and logistics.
+    estimated_value: 25_000_000,
   },
-
   // STE PROGRAM
   {
     notice_id: 'STE-2025-005',
@@ -476,18 +464,14 @@ export const MOCK_OPPORTUNITIES = [
     posted_date: new Date('2025-01-25'),
     response_deadline: new Date('2025-04-10'),
     naics_code: '541511',
-    classification_code: 'R425', // Training Aids and Devices
+    classification_code: 'R425',
     set_aside_code: 'WOSB',
     set_aside_description: 'Women-Owned Small Business Set-Aside',
     full_parent_path_name: 'Department of Defense.Department of the Army.Program Executive Office Simulation, Training and Instrumentation',
     organization_type: 'OFFICE',
-    office_address: {
-      city: 'Orlando',
-      state: 'FL',
-      zipcode: '32826',
-    },
+    office_address: { city: 'Orlando', state: 'FL', zipcode: '32826' },
     ui_link: 'https://sam.gov/opp/STE-2025-005/view',
-    secondary_naics: ['611430', '541370', '541930'], // Training, geospatial, translation
+    secondary_naics: ['611430', '541370', '541930'],
     key_requirements: [
       'Women-owned small business',
       'VR/AR development experience',
@@ -496,8 +480,9 @@ export const MOCK_OPPORTUNITIES = [
       'Multilingual UI support',
     ],
     complexity_score: '0.82',
+    // Rationale: Specialized VR/AR simulation development with AI and complex integrations. High-skill, labor-intensive.
+    estimated_value: 18_000_000,
   },
-
   // MHS-GENESIS PROGRAM
   {
     notice_id: 'MHS-2025-006',
@@ -513,11 +498,7 @@ export const MOCK_OPPORTUNITIES = [
     set_aside_description: 'Service-Disabled Veteran-Owned Small Business Set-Aside',
     full_parent_path_name: 'Department of Defense.Defense Health Agency.Program Executive Office, Defense Healthcare Management Systems',
     organization_type: 'OFFICE',
-    office_address: {
-      city: 'Falls Church',
-      state: 'VA',
-      zipcode: '22042',
-    },
+    office_address: { city: 'Falls Church', state: 'VA', zipcode: '22042' },
     ui_link: 'https://sam.gov/opp/MHS-2025-006/view',
     secondary_naics: ['541511', '621999'],
     key_requirements: [
@@ -528,8 +509,9 @@ export const MOCK_OPPORTUNITIES = [
       'Telehealth platform development',
     ],
     complexity_score: '0.75',
+    // Rationale: Enterprise-level integration with a major EHR system (MHS Genesis). High compliance and security overhead.
+    estimated_value: 12_500_000,
   },
-
   // CBRN-MODERNIZATION PROGRAM
   {
     notice_id: 'CBRN-2025-007',
@@ -539,19 +521,15 @@ export const MOCK_OPPORTUNITIES = [
     type: 'Solicitation',
     posted_date: new Date('2025-01-30'),
     response_deadline: new Date('2025-04-15'),
-    naics_code: '541712',
-    classification_code: 'A022', // R&D - Physical, Engineering, and Life Sciences
+    naics_code: '541710',
+    classification_code: 'A022',
     set_aside_code: 'SBA',
     set_aside_description: '8(a) Small Disadvantaged Business Set-Aside',
     full_parent_path_name: 'Department of Defense.Joint Program Executive Office for CBRN Defense',
     organization_type: 'OFFICE',
-    office_address: {
-      city: 'Aberdeen Proving Ground',
-      state: 'MD',
-      zipcode: '21010',
-    },
+    office_address: { city: 'Aberdeen Proving Ground', state: 'MD', zipcode: '21010' },
     ui_link: 'https://sam.gov/opp/CBRN-2025-007/view',
-    secondary_naics: ['339112', '541511'], // Medical device manufacturing, embedded software
+    secondary_naics: ['339112', '541511'],
     key_requirements: [
       '8(a) certified small disadvantaged business',
       'Biosafety Level 3 laboratory access',
@@ -560,8 +538,9 @@ export const MOCK_OPPORTUNITIES = [
       'ISO 13485 certification',
     ],
     complexity_score: '0.88',
+    // Rationale: High-tech R&D for new sensor hardware. Requires specialized facilities (BSL-3) and scientific expertise.
+    estimated_value: 22_000_000,
   },
-
   {
     notice_id: 'CBRN-2025-008',
     solicitation_number: 'W911SR-25-R-0091',
@@ -571,18 +550,14 @@ export const MOCK_OPPORTUNITIES = [
     posted_date: new Date('2025-02-15'),
     response_deadline: new Date('2025-05-01'),
     naics_code: '488510',
-    classification_code: 'V199', // Transportation/Travel - Other
+    classification_code: 'V199',
     set_aside_code: 'SBA',
     set_aside_description: '8(a) Small Disadvantaged Business Set-Aside',
     full_parent_path_name: 'Department of Defense.Defense Logistics Agency.DLA Troop Support',
     organization_type: 'OFFICE',
-    office_address: {
-      city: 'Philadelphia',
-      state: 'PA',
-      zipcode: '19111',
-    },
+    office_address: { city: 'Philadelphia', state: 'PA', zipcode: '19111' },
     ui_link: 'https://sam.gov/opp/CBRN-2025-008/view',
-    secondary_naics: ['493120', '541614'], // Warehousing, logistics consulting
+    secondary_naics: ['493120', '541614'],
     key_requirements: [
       '8(a) certified small disadvantaged business',
       'Cold-chain logistics experience',
@@ -591,8 +566,9 @@ export const MOCK_OPPORTUNITIES = [
       'CONUS/OCONUS distribution capability',
     ],
     complexity_score: '0.72',
+    // Rationale: Global logistics service with demanding SLAs (24/72hr delivery) and specialized requirements (cold-chain).
+    estimated_value: 30_000_000,
   },
-
   // MISCELLANEOUS - BASE INFRASTRUCTURE
   {
     notice_id: 'BASE-2025-009',
@@ -603,18 +579,14 @@ export const MOCK_OPPORTUNITIES = [
     posted_date: new Date('2025-02-20'),
     response_deadline: new Date('2025-05-10'),
     naics_code: '236220',
-    classification_code: 'Z1DA', // Construction - General Building/Facility
+    classification_code: 'Z1DA',
     set_aside_code: 'HZC',
     set_aside_description: 'HUBZone Set-Aside',
     full_parent_path_name: 'Department of Defense.Department of the Army.U.S. Army Corps of Engineers',
     organization_type: 'OFFICE',
-    office_address: {
-      city: 'Wilmington',
-      state: 'NC',
-      zipcode: '28403',
-    },
+    office_address: { city: 'Wilmington', state: 'NC', zipcode: '28403' },
     ui_link: 'https://sam.gov/opp/BASE-2025-009/view',
-    secondary_naics: ['562910', '541620'], // Remediation, environmental consulting
+    secondary_naics: ['562910', '541620'],
     key_requirements: [
       'HUBZone certified business',
       'USACE CQM certification',
@@ -623,6 +595,8 @@ export const MOCK_OPPORTUNITIES = [
       'OSHA 30-Hour certification',
     ],
     complexity_score: '0.79',
+    // Rationale: Combines two expensive efforts: major environmental remediation (PFAS) and high-security construction (3 SCIFs).
+    estimated_value: 45_000_000,
   },
 ];
 
@@ -652,7 +626,7 @@ export const MOCK_AWARDS = [
   {
     contract_number: 'W31P4Q-24-C-0067',
     program_code: 'GOLDEN-DOME',
-    naics_code: '541712', // R&D for threat modeling
+    naics_code: '541710', // R&D for threat modeling
     awarded_date: new Date('2024-03-10'),
     awardee_uei: 'MITRE200L',
     sub_ueis: ['CNTRAIL85M'], // Our Contrail Analytics won as sub!
@@ -760,7 +734,7 @@ export const MOCK_AWARDS = [
   {
     contract_number: 'W911SR-23-C-0123',
     program_code: 'CBRN-MODERNIZATION',
-    naics_code: '541712',
+    naics_code: '541710',
     awarded_date: new Date('2023-04-18'),
     awardee_uei: 'BATTELLE250L',
     sub_ueis: ['BIOSHIELD68M', 'IRONCLAD38M'], // Our biosurveillance + embedded

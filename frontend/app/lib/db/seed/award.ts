@@ -1,5 +1,5 @@
 import { drizzleDB, tables, inDev, rootDir, type NewAward } from '@/lib/db';
-import { MOCK_AWARDS } from '@/lib/db/mock';
+import { MOCK_AWARDS } from '@/lib/db/mock-data';
 import { loadEnvConfig } from '@next/env';
 import { consola } from 'consola';
 
@@ -11,8 +11,7 @@ export async function seedAwards() {
   const db = drizzleDB();
   const inserts = await db.insert(tables.awards)
     .values(MOCK_AWARDS as NewAward[])
-    .returning({ id: tables.awards.id })
-    .onConflictDoNothing();
+    .returning({ id: tables.awards.id });
   if (!inserts.length) consola.error('Insert Error');
 
   consola.success(`Seeded ${inserts.length} awards`);

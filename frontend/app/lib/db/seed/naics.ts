@@ -1,4 +1,4 @@
-import { drizzleDB, tables, rootDir, inDev, sql, type NewNaics } from '@/lib/db';
+import { drizzleDB, tables, rootDir, inDev, sql, type NewNaics, type Naics } from '@/lib/db';
 import { generateEmbedding } from '@/lib/embed';
 import { loadEnvConfig } from '@next/env';
 import { consola } from 'consola';
@@ -6,45 +6,81 @@ import { apiFetch } from '@/api';
 
 loadEnvConfig(rootDir, inDev);
 
+export function createNaicsProfileInput(naics: Naics): string {
+  const parts: string[] = [];
+
+  // Section 1: Core Identity
+  parts.push(`NAICS Code ${naics.code}: ${naics.title}`);
+  if (naics.description) parts.push(`Official Description: ${naics.description}`);
+
+  // Section 2: Industry Classification & Hierarchy
+  const hierarchyDetails: string[] = [];
+  if (naics.level) hierarchyDetails.push(`Level: ${naics.level}`);
+
+  if (naics.sector) hierarchyDetails.push(`Sector: ${naics.sector}`);
+
+  if (hierarchyDetails.length > 0) parts.push(`\nIndustry Classification:\n- ${hierarchyDetails.join('\n- ')}`);
+
+  // Section 3: Business Qualification Context
+  if (naics.size_standard_metric && naics.size_standard_max) {
+    const value =
+      naics.size_standard_metric === 'receipts'
+        ? // format as millions of dollars for clarity
+        new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          maximumFractionDigits: 1,
+        }).format(naics.size_standard_max / 1_000_000) + ' million'
+        : // format with commas for readability
+        new Intl.NumberFormat('en-US').format(naics.size_standard_max);
+
+    const metric = naics.size_standard_metric;
+    parts.push(
+      `\nSmall Business Qualification Standard: A business in this industry is considered "small" if it has up to ${value} in average annual ${metric}.`
+    );
+  }
+
+  // Section 4: Domain-Specific Relevance
+  if (naics.defense_related) {
+    parts.push(
+      `\nDefense Sector Relevance: This industry has been identified as highly relevant to U.S. defense and national security contracts.`
+    );
+  }
+
+  return parts.join('\n\n');
+}
+
 export async function seedNAICS() {
   consola.start('Seeding NAICS data from census.gov, sba.gov...');
+
   const { data } = await apiFetch('/naics/data');
   const naicsData = data.lookups.naics.filter((n: NewNaics) => n && n.code);
 
+  const EMBEDDING_BATCH_SIZE = 100;
   const records: NewNaics[] = [];
-  const EMBEDDING_CONCURRENCY = 100;
 
   consola.info(`Generating ${naicsData.length} embeddings...`);
-  for (let i = 0; i < naicsData.length; i += EMBEDDING_CONCURRENCY) {
-    const chunk = naicsData.slice(i, i + EMBEDDING_CONCURRENCY);
+
+  for (let i = 0; i < naicsData.length; i += EMBEDDING_BATCH_SIZE) {
+    const chunk = naicsData.slice(i, i + EMBEDDING_BATCH_SIZE);
 
     const embeddedChunk = await Promise.all(
       chunk.map(async (n: NewNaics) => {
-        const embeddingText = `${n.title}: ${n.description}`;
-        const vector = await generateEmbedding(embeddingText);
+        const embeddingText = createNaicsProfileInput(n as Naics);
+        const vector = await generateEmbedding(embeddingText, { model: 'summary' });
         return {
-          code: n.code,
-          description: n.description,
-          title: n.title,
-          level: n.level,
-          sector: n.sector,
-          subsector: n.subsector,
-          industry_group: n.industry_group,
-          industry: n.industry,
-          size_standard_metric: n.size_standard_metric,
-          size_standard_max: n.size_standard_max,
-          related_codes: n.related_codes,
-          cross_ref_count: n.cross_ref_count,
-          defense_related: n.defense_related,
-          defense_keyword_count: n.defense_keyword_count,
-          validated: n.validated,
-          change_indicator: n.change_indicator,
-          embedding: vector,
+          ...n,
+          embedding_summary: vector,
         };
       })
     );
+
     records.push(...embeddedChunk);
-    consola.info(`Processed embeddings for ${records.length} / ${naicsData.length} codes`);
+    const progress = Math.min(i + EMBEDDING_BATCH_SIZE, naicsData.length);
+    consola.info(`${progress}/${naicsData.length} embeddings generated`);
+
+    // Small delay to prevent overwhelming the file system
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
 
   const db = drizzleDB();
@@ -69,10 +105,12 @@ export async function seedNAICS() {
             defense_keyword_count: sql`excluded.defense_keyword_count`,
             validated: sql`excluded.validated`,
             change_indicator: sql`excluded.change_indicator`,
-            embedding: sql`excluded.embedding`,
+            embedding_summary: sql`excluded.embedding_summary`,
             updated_at: new Date(),
           },
         });
+
+      consola.info(`Upsert batch ${i / batchSize + 1} / ${Math.ceil(records.length / batchSize)}`);
     }
   });
   consola.success(`Seeded data for ${records.length} NAICS codes.`);
