@@ -41,10 +41,10 @@ function computeFitScore(company: CompanyFitMetrics, opportunity: OpportunityFit
   let naicsScore = 0; // NAICS ALIGNMENT (40% weight)
   if (company.primary_naics === opportunity.naics_code) {
     naicsScore = 100;
-    reasoning.push('✓ Primary NAICS is exact match');
+    reasoning.push('✓ Primary NAICS alignment');
   } else if (opportunity.secondary_naics?.includes(company.primary_naics)) {
     naicsScore = 85;
-    reasoning.push('✓ Primary NAICS matches secondary requirement');
+    reasoning.push('✓ Primary NAICS matches requirement');
   } else if (companyNAICS.some(nc => allOpportunityNAICS.includes(nc))) {
     naicsScore = 75;
     reasoning.push('✓ Secondary NAICS matches opportunity');
@@ -52,24 +52,24 @@ function computeFitScore(company: CompanyFitMetrics, opportunity: OpportunityFit
     allOpportunityNAICS.some(opp => co.substring(0, 5) === opp.substring(0, 5))
   )) {
     naicsScore = 60;
-    reasoning.push('○ 5-digit NAICS match (industry level)');
+    reasoning.push('○ NAICS industry match (5-digit)');
   } else if (companyNAICS.some(co =>
     allOpportunityNAICS.some(opp => co.substring(0, 4) === opp.substring(0, 4))
   )) {
     naicsScore = 45;
-    reasoning.push('○ 4-digit NAICS match (industry group)');
+    reasoning.push('○ Industry group match (4-digit)');
   } else if (companyNAICS.some(co =>
     allOpportunityNAICS.some(opp => co.substring(0, 3) === opp.substring(0, 3))
   )) {
     naicsScore = 30;
-    reasoning.push('△ 3-digit NAICS match (subsector)');
+    reasoning.push('△ Subsector match (3-digit)');
   } else if (companyNAICS.some(co =>
     allOpportunityNAICS.some(opp => co.substring(0, 2) === opp.substring(0, 2))
   )) {
     naicsScore = 15;
-    reasoning.push('△ Weak 2-digit NAICS match (sector only)');
+    reasoning.push('△ Weak sector match (2-digit)');
   } else {
-    reasoning.push('✗ No NAICS alignment detected');
+    reasoning.push('✗ No NAICS alignment');
   }
 
   let eligible = true;
@@ -245,15 +245,6 @@ export function DataRadarChart() {
                 {isCompanyView ? 'Opportunity Fit Analysis' : 'Company Fit Analysis'}
               </h3>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {isCompanyView
-                ? "Discover which opportunities align best with a company's capabilities"
-                : "Find the best companies for this opportunity or identify joint venture partners"
-              }
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
             {/* VIEW TOGGLE */}
             <Tabs value={viewMode} onValueChange={v => setViewMode(v as ViewMode)}>
               <TabsList>
@@ -267,6 +258,28 @@ export function DataRadarChart() {
                 </TabsTrigger>
               </TabsList>
             </Tabs>
+            {/* <p className="text-sm text-muted-foreground leading-relaxed">
+              {isCompanyView
+                ? "Discover which opportunities align best with a company's capabilities"
+                : "Find the best companies for this opportunity or identify joint venture partners"
+              }
+            </p> */}
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* VIEW TOGGLE */}
+            {/* <Tabs value={viewMode} onValueChange={v => setViewMode(v as ViewMode)}>
+              <TabsList>
+                <TabsTrigger value="opportunity" className="text-xs">
+                  <Users className="size-3 mr-1" />
+                  Companies
+                </TabsTrigger>
+                <TabsTrigger value="company" className="text-xs">
+                  <Target className="size-3 mr-1" />
+                  Opportunities
+                </TabsTrigger>
+              </TabsList>
+            </Tabs> */}
 
             {/* DROPDOWN MENU */}
             {isCompanyView ? (

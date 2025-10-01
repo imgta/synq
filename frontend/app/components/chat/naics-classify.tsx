@@ -36,7 +36,7 @@ function NaicsCodeCard({ code, title, description, similarity, isPrimary = false
 }
 
 // The main component that orchestrates the display
-export function NaicsClassificationResult({ primaryNaics, ancillaryNaics }: NaicsClassificationProps) {
+export function NaicsCodeResult({ primaryNaics, ancillaryNaics }: NaicsClassificationProps) {
   return (
     <div className="bg-background p-4 my-2 rounded-xl shadow-sm border border-slate-200 space-y-4">
       <h2 className="text-xl font-semibold text-foreground-800">NAICS Code Classification</h2>

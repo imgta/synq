@@ -33,7 +33,7 @@ export default function Index() {
         <div className="pt-24 pb-16 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-muted-foreground text-sm mb-6">
             <Sparkles className="size-3" />
-            <span>AI-powered defense contracting intelligence</span>
+            <span>AI-powered government contracting intelligence</span>
           </div>
           <h1 className="text-8xl mb-4 font-soehne font-medium">synQ</h1>
         </div>
@@ -49,7 +49,7 @@ export default function Index() {
                   case 'tool-weather':
                     return <pre key={key}>{JSON.stringify(part, null, 2)}</pre>;
                   case 'tool-naicsFromBusinessDescription':
-                    return <pre key={key}>{JSON.stringify(part, null, 2)}</pre>;
+                    return <p key={key}>{JSON.stringify(part, null, 2)}</p>;
                 }
               })}
             </div>
