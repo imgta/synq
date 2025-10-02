@@ -6,14 +6,30 @@ import { apiFetch } from '@/api';
 
 loadEnvConfig(rootDir, inDev);
 
-export function createNaicsProfileInput(naics: Naics): string {
+export function createNaicsInput(naics: Naics): string {
   const parts: string[] = [];
 
-  // Section 1: Core Identity
+  // Core Identity
   parts.push(`NAICS Code ${naics.code}: ${naics.title}`);
-  if (naics.description) parts.push(`Official Description: ${naics.description}`);
 
-  // Section 2: Industry Classification & Hierarchy
+  if (naics.description) {
+    const xRefMarker = 'Cross-References. Establishments primarily engaged in--';
+    const markerIdx = naics.description.indexOf(xRefMarker);
+
+    if (markerIdx !== -1) {
+      // split string by cross reference marker
+      const mainDescription = naics.description.substring(0, markerIdx).trim();
+      const xRefs = naics.description.substring(markerIdx + xRefMarker.length).trim();
+
+      parts.push(`Official Description: ${mainDescription}`);
+      // dedicated section for cross references
+      parts.push(`\nIndustry Cross-References:\n${xRefs}`);
+    } else {
+      parts.push(`Official Description: ${naics.description}`);
+    }
+  }
+
+  // Industry Classification & Hierarchy
   const hierarchyDetails: string[] = [];
   if (naics.level) hierarchyDetails.push(`Level: ${naics.level}`);
 
@@ -21,30 +37,22 @@ export function createNaicsProfileInput(naics: Naics): string {
 
   if (hierarchyDetails.length > 0) parts.push(`\nIndustry Classification:\n- ${hierarchyDetails.join('\n- ')}`);
 
-  // Section 3: Business Qualification Context
+  // Business Qualification Context
   if (naics.size_standard_metric && naics.size_standard_max) {
-    const value =
-      naics.size_standard_metric === 'receipts'
-        ? // format as millions of dollars for clarity
-        new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-          maximumFractionDigits: 1,
-        }).format(naics.size_standard_max / 1_000_000) + ' million'
-        : // format with commas for readability
-        new Intl.NumberFormat('en-US').format(naics.size_standard_max);
-
+    const value = naics.size_standard_metric === 'receipts'
+      ? new Intl.NumberFormat('en-US', { // format as millions of dollars
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 1,
+      }).format(naics.size_standard_max / 1_000_000) + ' million'
+      : new Intl.NumberFormat('en-US').format(naics.size_standard_max); // format with commas
     const metric = naics.size_standard_metric;
-    parts.push(
-      `\nSmall Business Qualification Standard: A business in this industry is considered "small" if it has up to ${value} in average annual ${metric}.`
-    );
+    parts.push(`\nSmall Business Qualification Standard: A business in this industry is considered "small" if it has up to ${value} in average annual ${metric}.`);
   }
 
-  // Section 4: Domain-Specific Relevance
+  // Domain-Specific Relevance
   if (naics.defense_related) {
-    parts.push(
-      `\nDefense Sector Relevance: This industry has been identified as highly relevant to U.S. defense and national security contracts.`
-    );
+    parts.push(`\nDefense Sector Relevance: This industry has been identified as highly relevant to U.S. defense and national security contracts.`);
   }
 
   return parts.join('\n\n');
@@ -66,7 +74,7 @@ export async function seedNAICS() {
 
     const embeddedChunk = await Promise.all(
       chunk.map(async (n: NewNaics) => {
-        const embeddingText = createNaicsProfileInput(n as Naics);
+        const embeddingText = createNaicsInput(n as Naics);
         const vector = await generateEmbedding(embeddingText, { model: 'summary' });
         return {
           ...n,
@@ -79,8 +87,8 @@ export async function seedNAICS() {
     const progress = Math.min(i + EMBEDDING_BATCH_SIZE, naicsData.length);
     consola.info(`${progress}/${naicsData.length} embeddings generated`);
 
-    // Small delay to prevent overwhelming the file system
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // small delay to prevent file system overwhelm
+    await new Promise(resolve => setTimeout(resolve, 50));
   }
 
   const db = drizzleDB();

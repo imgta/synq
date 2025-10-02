@@ -17,10 +17,10 @@ export const naics = pgTable('naics', {
   code: text('code').primaryKey(), // 6-digit padded code
   description: text('description').notNull(),
   title: text('title'),
-  level: naicsLevelEnum().notNull(), // specificity, 'sector', 'subsector', 'industry_group'
+  level: naicsLevelEnum().notNull(), // sector | subsector | industry_group
   sector: text('sector').notNull(), // first 2 digits
   trilateral: boolean('trilateral'), // under Canada, US, Mexico trilateral agreement
-  // size standard metrics for small business set-asides qualification
+  // size standard metrics for SBA set-asides qualification
   size_standard_metric: sizeMetricEnum(), // receipts | employees
   size_standard_max: bigint('size_standard_max', { mode: 'number' }), // revenue or headcount
   related_codes: jsonb('related_codes').$type<string[]>().default([]),
@@ -123,7 +123,7 @@ export const opportunities = pgTable('opportunities', {
     full_name?: string;
     additional_info?: { content?: string; };
   }[]>().default([]),
-  // place of performance (where contract services are rendered, or goods delivered)
+  // where contract services are rendered, or goods delivered
   place_of_performance: jsonb('place_of_performance').$type<{
     street_address?: string;
     street_address2?: string;
@@ -140,7 +140,7 @@ export const opportunities = pgTable('opportunities', {
   // statuses, flags
   active: boolean('active').default(true).notNull(), // mapped from 'Yes' | 'No' string
   additional_info_required: boolean('additional_info_required').default(false),
-  // AI features
+  // AI extractions
   embedding_summary: vector('embedding_summary', { dimensions: EMBEDDING_DIMENSIONS.summary }),
   embedding_fulltext: vector('embedding_fulltext', { dimensions: EMBEDDING_DIMENSIONS.fulltext }),
   estimated_value: bigint('estimated_value', { mode: 'number' }), // AI-extracted value from description text, attachment docs, etc.

@@ -170,13 +170,13 @@ class NAICSProcessor:
 
     def load_naics_data(self):
         """Load, process, and merge all NAICS data"""
-        desc_df = self._load_descriptions()  # core descriptions
+        descript_df = self._load_descriptions()  # core descriptions
         codes_df = self._load_2_6_digit_codes()  # 2-6 digit NAICS codes for validation
-        structure_df = self._load_structure()  # detailed hierarchy and metadata
-        cross_ref_data = self._load_cross_references()  # cross references for relationship mapping
+        struct_df = self._load_structure()  # detailed hierarchy and metadata
+        xref_map, xref_df = self._load_cross_references()  # cross references for relationship mapping
         sba_df = self._load_sba_size_standards()
 
-        df = self._merge_naics_data(desc_df, codes_df, structure_df, cross_ref_data, sba_df)
+        df = self._merge_naics_data(descript_df, codes_df, struct_df, xref_map, xref_df, sba_df)
         return df
 
     def _find_col(self, df: pd.DataFrame, matches: List[str], fallback_idx: int):
@@ -345,13 +345,13 @@ class NAICSProcessor:
         Load 2-6 digit NAICS codes excel sheet.\n
         cols: Seq. No | 2022 NAICS US   Code | 2022 NAICS US Title
         """
-        files_ = self.files[file_key]
-        filename = files_["filename"]
-        url = files_["url"]
+        meta = self.files[file_key]
+        filename = meta["filename"]
         file_path = self.data_dir / filename
         if not file_path.exists():
             print("Warning: 2-6 digit codes file not found, skipping...")
             return pd.DataFrame()
+
         df = pd.read_excel(io=file_path, dtype=str).rename(columns=str.lower)
         code_col = self._find_col(df, ["code"], 1)
 
@@ -359,7 +359,7 @@ class NAICSProcessor:
         df[code_col] = df[code_col].apply(self.zero_pad)
 
         df = df[[code_col]].rename(columns={code_col: "naics_code"}).dropna().drop_duplicates()
-        df["source"] = url  # add source
+        df["source"] = meta["url"]  # add source
 
         print(f"{filename}: loaded {len(df)} records.")
         return df
@@ -422,61 +422,100 @@ class NAICSProcessor:
         return pd.DataFrame()
 
     def _load_cross_references(self, file_key: str = "cross_references"):
-        """Load NAICS Industry Cross-References excel sheet to build relationship mapping\n
-        cols: Code | Cross-Reference"""
-        files_ = self.files[file_key]
-        filename = files_["filename"]
-        url = files_["url"]
+        """
+        Load NAICS Industry Cross-References excel sheet to build:
+        - relationship mapping (code -> list of related codes)
+        - complete cross-reference bullet texts missing from descriptions\n
+        cols: `Code` | `Cross-Reference`
+        """
+        meta = self.files[file_key]
+        filename = meta["filename"]
         file_path = self.data_dir / filename
+
         if not file_path.exists():
             print("Warning: Cross-references file not found, skipping...")
-            return {}
+            return {}, pd.DataFrame()
 
-        try:
-            df = pd.read_excel(file_path, dtype=str).rename(columns=str.lower)
-            # find code and cross-reference column names
-            code_col = self._find_col(df, ["code"], 0)
-            ref_text = self._find_col(df, ["cross", "refer"], 1)
+        df = pd.read_excel(file_path, dtype=str).rename(columns=str.lower)
 
-            # create new header with right-padded NAICS codes
-            df["naics_code"] = df[code_col].apply(self.zero_pad)
+        # find code and cross-reference column names
+        code_col = self._find_col(df, ["code"], 0)
+        xref_col = self._find_col(df, ["cross"], 1)
+        if not code_col or not xref_col:
+            print("Warning: Required columns not found in cross-references")
+            return {}, pd.DataFrame()
 
-            # extract all potential NAICS (4-6 digit) codes from reference text
-            naics_regex = r"\b(\d{4,6})\b"
-            exploded = (
-                df.assign(ref_code=df[ref_text].str.extractall(naics_regex)[0].groupby(level=0).apply(list))
-                .explode("ref_code")  # explode dataframe to expand each cross-ref pair into separate rows
-                .dropna(subset=["ref_code"])
-            )
-            # right-pad NAICS codes with '0' to 6 digits
-            exploded["ref_code"] = exploded["ref_code"].apply(self.zero_pad)
-            # add cross-reference text
-            exploded["ref_text"] = exploded[ref_text].str.strip()
+        # standardize to zero-padded NAICS codes
+        df["naics_code"] = df[code_col].apply(self.zero_pad)
+        df["ref_text"] = df[xref_col].fillna("").str.strip()
 
-            exploded = exploded[["naics_code", "ref_code", "ref_text"]]
+        df = df[df["ref_text"] != ""].copy()  # remove empty references
 
-            mapping = (
-                exploded.groupby("naics_code")["ref_code"]
-                .aggregate(
-                    lambda refs: sorted(
-                        # filter out self-loops (self-refs) for more meaningful adjacency lists later
-                        set(code for code in refs if code != refs.name),
-                    )
-                )
-                .to_dict()
-            )
-            exploded["source"] = url
+        # extract all potential NAICS (4-6 digit) codes from reference text
+        naics_regex = r"\b(\d{4,6})\b"
+        df["ref_codes"] = (
+            df["ref_text"].str.findall(naics_regex).apply(lambda codes: [self.zero_pad(c) for c in codes])
+        )
 
-            # TODO: expose dataframe for analysis (degrees, clusters, etc)?
-            # self.cross_ref_df = exploded.reset_index(drop=True)
+        mapping = {}
+        for naics_code, group in df.groupby("naics_code"):
+            all_refs = set()
+            for ref_list in group["ref_codes"]:
+                all_refs.update(ref_list)
+            all_refs.discard(naics_code)  # remove self-references
+            mapping[naics_code] = sorted(all_refs)
 
-            print(
-                f"{filename}: extracted {len(mapping):,} naics codes with {len(exploded):,} total references."
-            )
-            return mapping
-        except Exception as e:
-            print(f"Warning: Could not load cross-references: {e}")
-        return {}
+        # build full cross-reference text for descriptions, grouping bullets for each NAICS
+        xref_text = (
+            df.groupby("naics_code")["ref_text"]
+            .apply(lambda texts: "\n".join(f"  • {t}" for t in texts))
+            .reset_index()
+            .rename(columns={"ref_text": "xref_bullets"})
+        )
+        xref_text["source"] = meta["url"]
+
+        print(f"{filename}: loaded {len(mapping)} total references.")
+        return mapping, xref_text
+
+    def _append_cross_reference_bullets(self, descript_df: pd.DataFrame, crossref_df: pd.DataFrame):
+        """
+        Append missing cross-reference bullets to descriptions that end with
+        'Cross-References. Establishments primarily engaged in--'
+
+        Args:
+            descript_df: DataFrame with descriptions
+            crossref_df: DataFrame with naics_code and xref_bullets columns
+
+        Returns:
+            DataFrame with updated descriptions
+        """
+        if crossref_df.empty:
+            return descript_df
+
+        df = descript_df.copy()
+
+        # merge cross-reference bullets
+        df = df.merge(crossref_df[["naics_code", "xref_bullets"]], on="naics_code", how="left")
+
+        # identify descriptions that need bullets appended
+        crossref_pattern = r"Cross-References\.\s+Establishments primarily engaged in--\s*$"
+        needs_bullets = df["description"].str.contains(crossref_pattern, case=False, regex=True, na=False)
+
+        # append bullets where needed and available
+        has_bullets = df["xref_bullets"].notna()
+        should_append = needs_bullets & has_bullets
+
+        df.loc[should_append, "description"] = (
+            df.loc[should_append, "description"] + "\n" + df.loc[should_append, "xref_bullets"]
+        )
+
+        df = df.drop(columns=["xref_bullets"])  # clean up temporary column
+
+        appended_count = should_append.sum()
+        if appended_count > 0:
+            print(f"Appended cross-reference bullets to {appended_count} descriptions.")
+
+        return df
 
     def _merge_naics_data(
         self,
@@ -484,10 +523,12 @@ class NAICSProcessor:
         codes_df: pd.DataFrame,
         structure_df: pd.DataFrame,
         cross_refs: Dict[str, list],
+        xref_df: pd.DataFrame,
         sba_df: pd.DataFrame,
     ):
         """Merge all NAICS data sources into comprehensive dataset"""
-        df = descript_df.copy()  # start with descriptions as base
+        # FIRST: appending missing cross-reference bullet texts to descriptions
+        df = self._append_cross_reference_bullets(descript_df, xref_df)
 
         # validation from codes
         if not codes_df.empty:
@@ -626,6 +667,7 @@ class NAICSProcessor:
             "81": "Other Services (except Public Administration)",
             "92": "Public Administration",
         }
+
         # some lightweight indexes for faster filtering
         indexes = {
             "defense_codes": df.loc[df["defense_related"], "naics_code"].tolist(),

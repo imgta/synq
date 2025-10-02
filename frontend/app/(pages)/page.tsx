@@ -46,9 +46,7 @@ export default function Index() {
                 switch (part.type) {
                   case 'text':
                     return <div key={key}>{part.text}</div>;
-                  case 'tool-weather':
-                    return <pre key={key}>{JSON.stringify(part, null, 2)}</pre>;
-                  case 'tool-naicsFromBusinessDescription':
+                  case 'tool-classifyBusinessByNAICS':
                     return <p key={key}>{JSON.stringify(part, null, 2)}</p>;
                 }
               })}
