@@ -3,6 +3,7 @@ import { findNaicsCandidates } from '@/api/_actions/find-naics';
 import { findJVPartners } from '@/api/_actions/find-partners';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
+import { NextResponse } from 'next/server';
 
 interface StreamAIRequestBody {
   system: string;
@@ -88,7 +89,14 @@ ${JSON.stringify(candidates, null, 2)}
       // tool #2
       findJVPartners,
     },
-    stopWhen: [hasToolCall('findJVPartners')],
+    stopWhen: [
+      hasToolCall('classifyBusinessByNAICS'),
+      hasToolCall('findJVPartners'),
+    ],
   });
   return result.toUIMessageStreamResponse();
+}
+
+export async function GET() {
+  return NextResponse.json({ ok: true, route: '/api/chat' });
 }

@@ -1,6 +1,6 @@
 import { drizzleDB, tables, inDev, rootDir, eq } from '@/lib/db';
 import { MOCK_OPPORTUNITIES, EXTENDED_MOCK_OPPORTUNITIES } from "@/lib/db/mock/opportunities";
-import { generateEmbedding } from '@/lib/embedding';
+import { generateOpenAiEmbedding } from '@/lib/embedding';
 import { loadEnvConfig } from '@next/env';
 import { consola } from 'consola';
 
@@ -68,10 +68,10 @@ export async function seedOpportunities(mockOpps: MockOpportunity[]) {
 
     // generate 384-dim summary embedding using 'summary' model
     const summaryProfileText = createOpportunityInput(opp);
-    const summaryVector = await generateEmbedding(summaryProfileText, { model: 'summary' });
+    const summaryVector = await generateOpenAiEmbedding(summaryProfileText, { model: 'summary' });
 
     // generate 768-dim fulltext embedding using 'fulltext' model
-    const fulltextVector = await generateEmbedding(opp.description, { model: 'fulltext' });
+    const fulltextVector = await generateOpenAiEmbedding(opp.description, { model: 'fulltext' });
 
     records.push({
       ...opp,

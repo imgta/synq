@@ -1,5 +1,5 @@
 import { drizzleDB, tables } from '@/lib/db';
-import { generateEmbedding } from '@/lib/embedding';
+import { generateOpenAiEmbedding } from '@/lib/embedding';
 import { cosineDistance, inArray, desc, sql } from 'drizzle-orm';
 
 /**
@@ -10,10 +10,10 @@ import { cosineDistance, inArray, desc, sql } from 'drizzle-orm';
  * @param limit The number of codes to return.
  * @returns A promise that resolves to an array of NAICS codes with their similarity and final score.
  */
-export async function findNaicsCandidates(description: string, limit = 10) {
+export async function findNaicsCandidates(description: string, limit = 8) {
   const db = drizzleDB();
 
-  const queryVector = await generateEmbedding(description, { model: 'summary' });
+  const queryVector = await generateOpenAiEmbedding(description, { model: 'summary' });
 
   const similarity = sql<number>`1 - (${cosineDistance(tables.naics.embedding_summary, queryVector)})`;
 

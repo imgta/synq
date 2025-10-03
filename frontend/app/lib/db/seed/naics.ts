@@ -1,5 +1,5 @@
 import { drizzleDB, tables, rootDir, inDev, sql, type NewNaics, type Naics } from '@/lib/db';
-import { generateEmbedding } from '@/lib/embedding';
+import { generateOpenAiEmbedding } from '@/lib/embedding';
 import { loadEnvConfig } from '@next/env';
 import { consola } from 'consola';
 import { apiFetch } from '@/api';
@@ -75,7 +75,7 @@ export async function seedNAICS() {
     const embeddedChunk = await Promise.all(
       chunk.map(async (n: NewNaics) => {
         const embeddingText = createNaicsInput(n as Naics);
-        const vector = await generateEmbedding(embeddingText, { model: 'summary' });
+        const vector = await generateOpenAiEmbedding(embeddingText, { model: 'summary' });
         return {
           ...n,
           embedding_summary: vector,

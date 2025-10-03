@@ -3,6 +3,8 @@ An AI-Powered Matchmaking Engine for U.S. Defense Contracting Joint Ventures
 
 **The Problem:** Government contracting is fiercely competitive. Companies, especially smaller ones, often lack the full range of capabilities required to bid on large, complex contract opportunities. They need to form strategic partnerships (joint ventures) to fill these gaps, but discovering the right partners is a slow, manual, and relationship-driven process.
 
+<img width="951" height="975" alt="image" src="https://github.com/user-attachments/assets/4f3df24a-1976-432f-ad7c-f8a826567422" />
+
 ## Core Features
 1. AI Chat Interface with conversation entry points for:
 - finding most relevant NAICS codes based on business/company descriptions
@@ -62,7 +64,7 @@ We're Sentinel Microsystems (UEI SENTINEL92M) going after GD-2025-002 (WOSB). Gi
 ```
 
 ```
-As Tristimuli (WOSB), pull raw candidates for Virtual Flight Operations Trainer with Multilingual Voice. Limit 8.
+As Tristimuli (UEI TRISTI65M)  (WOSB), pull raw candidates for Virtual Flight Operations Trainer with Multilingual Voice. Limit 8.
 ```
 
 ## Directory Structure

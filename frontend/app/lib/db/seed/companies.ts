@@ -1,5 +1,5 @@
 import { drizzleDB, tables, inDev, rootDir, type NewCompany } from '@/lib/db';
-import { generateEmbedding } from '@/lib/embedding';
+import { generateOpenAiEmbedding } from '@/lib/embedding';
 import { MOCK_COMPANIES, EXTENDED_MOCK_COMPANIES } from '@/lib/db/mock/companies';
 import { loadEnvConfig } from '@next/env';
 import { consola } from 'consola';
@@ -82,7 +82,7 @@ export async function seedCompanies(mockCompanies: MockCompany[]) {
   const records = await Promise.all(
     mockCompanies.map(async co => {
       const embeddingText = createCompanyInput(co);
-      const vector = await generateEmbedding(embeddingText, { model: 'summary' });
+      const vector = await generateOpenAiEmbedding(embeddingText, { model: 'summary' });
 
       return {
         ...co,
