@@ -2,13 +2,13 @@ import { type NextConfig } from 'next';
 import path from 'path';
 
 const EXTERNALS = [
-  '@huggingface/transformers',
+  'sharp',
   'onnxruntime-node',
 ];
 
 export default {
-  // outputFileTracingIncludes: { '/api/**/*': ['./node_modules/**/*.wasm'] },
-  // serverExternalPackages: EXTERNALS,
+  outputFileTracingIncludes: { '/api/**/*': ['./node_modules/**/*.wasm'] },
+  serverExternalPackages: EXTERNALS,
   // webpack(cfg) {
   //   cfg.experiments = { asyncWebAssembly: true, layers: true };
   //   cfg.externals ||= [];
