@@ -1,11 +1,15 @@
 import {
-  pipeline,
   type FeatureExtractionPipeline,
   type ProgressCallback,
   type PipelineType,
 } from '@huggingface/transformers';
 import type { Opportunity } from '@/lib/db';
 import { consola } from 'consola';
+
+const { pipeline, env } = await import('@huggingface/transformers');
+
+env.allowRemoteModels = true;
+env.useBrowserCache = false;
 
 export const EmbeddingModels = {
   /** 384-dimension size model for embedding structured summary texts.*/
@@ -31,7 +35,7 @@ class EmbeddingPipelineManager {
 
     const extractor = await pipeline(this.task, modelName, {
       progress_callback,
-      device: 'cpu',
+      device: 'wasm',
       dtype: 'fp32',
     });
     consola.success(`${modelName} pipeline initialized`);
