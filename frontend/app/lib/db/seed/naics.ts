@@ -75,7 +75,7 @@ export async function seedNAICS() {
     const embeddedChunk = await Promise.all(
       chunk.map(async (n: NewNaics) => {
         const embeddingText = createNaicsInput(n as Naics);
-        const vector = await OpenAiEmbeddingModels(embeddingText, { model: 'summary' });
+        const vector = await generateOpenAiEmbedding(embeddingText, { model: 'summary' });
         return {
           ...n,
           embedding_summary: vector,

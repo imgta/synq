@@ -44,7 +44,7 @@ export async function seedPrograms() {
   const records = await Promise.all(
     MOCK_PROGRAMS.map(async (prog) => {
       const profileText = createProgramInput(prog);
-      const vector = await OpenAiEmbeddingModels(profileText, { model: 'summary' });
+      const vector = await generateOpenAiEmbedding(profileText, { model: 'summary' });
 
       return {
         ...prog,
