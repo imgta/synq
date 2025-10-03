@@ -68,7 +68,7 @@ We're Sentinel Microsystems (UEI SENTINEL92M) going after GD-2025-002 (WOSB). Gi
 ```
 
 ```
-As Tristimuli (UEI TRISTI65M)  (WOSB), pull raw candidates for Virtual Flight Operations Trainer with Multilingual Voice. Limit 8.
+For Tristimuli (UEI TRISTI65M, WOSB) targeting STE-2025-005 (coalition VR/AR training), surface 8 JV candidates covering HLA/DIS interoperability, GEOINT terrain generation, and multilingual voice/UX.
 ```
 
 ## Directory Structure
