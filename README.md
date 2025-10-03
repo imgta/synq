@@ -64,7 +64,7 @@ We're Sentinel Microsystems (UEI SENTINEL92M) going after GD-2025-002 (WOSB). Gi
 ```
 
 ```
-As Tristimuli (WOSB), pull raw candidates for Virtual Flight Operations Trainer with Multilingual Voice. Limit 8.
+As Tristimuli (UEI TRISTI65M)  (WOSB), pull raw candidates for Virtual Flight Operations Trainer with Multilingual Voice. Limit 8.
 ```
 
 ## Directory Structure
