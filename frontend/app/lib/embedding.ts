@@ -8,7 +8,7 @@ import type { Opportunity } from '@/lib/db';
 import { consola } from 'consola';
 
 env.allowLocalModels = false; // skip local model check
-// env.allowRemoteModels = true;
+env.allowRemoteModels = true;
 // env.useBrowserCache = false;
 
 export const EmbeddingModels = {
