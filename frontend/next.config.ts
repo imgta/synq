@@ -7,14 +7,14 @@ const EXTERNALS = [
 ];
 
 export default {
-  outputFileTracingIncludes: { '/api/**/*': ['./node_modules/**/*.wasm'] },
-  serverExternalPackages: EXTERNALS,
-  webpack(cfg) {
-    cfg.experiments = { asyncWebAssembly: true, layers: true };
-    cfg.externals ||= [];
-    cfg.externals.push({ zipfile: 'commonjs zipfile' });
-    return cfg;
-  },
+  // outputFileTracingIncludes: { '/api/**/*': ['./node_modules/**/*.wasm'] },
+  // serverExternalPackages: EXTERNALS,
+  // webpack(cfg) {
+  //   cfg.experiments = { asyncWebAssembly: true, layers: true };
+  //   cfg.externals ||= [];
+  //   cfg.externals.push({ zipfile: 'commonjs zipfile' });
+  //   return cfg;
+  // },
   experimental: {
     reactCompiler: true, // enable `babel-plugin-react-compiler@rc`
   },

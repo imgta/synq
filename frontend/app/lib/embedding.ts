@@ -1,12 +1,11 @@
 import {
+  pipeline, env,
   type FeatureExtractionPipeline,
   type ProgressCallback,
   type PipelineType,
 } from '@huggingface/transformers';
 import type { Opportunity } from '@/lib/db';
 import { consola } from 'consola';
-
-const { pipeline, env } = await import('@huggingface/transformers');
 
 env.allowRemoteModels = true;
 env.useBrowserCache = false;
