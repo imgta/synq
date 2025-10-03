@@ -2,6 +2,7 @@
 An AI-Powered Matchmaking Engine for U.S. Defense Contracting Joint Ventures
 
 [Live site](https://synq-pi.vercel.app)
+
 See [sample queries](#sample-queries) for preselected queries to try.
 
 **The Problem:** Government contracting is fiercely competitive. Companies, especially smaller ones, often lack the full range of capabilities required to bid on large, complex contract opportunities. They need to form strategic partnerships (joint ventures) to fill these gaps, but discovering the right partners is a slow, manual, and relationship-driven process.
