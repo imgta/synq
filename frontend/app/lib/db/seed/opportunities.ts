@@ -1,6 +1,6 @@
 import { drizzleDB, tables, inDev, rootDir, eq } from '@/lib/db';
 import { MOCK_OPPORTUNITIES, EXTENDED_MOCK_OPPORTUNITIES } from "@/lib/db/mock/opportunities";
-import { OpenAiEmbeddingModels } from '@/lib/embedding';
+import { generateOpenAiEmbedding } from '@/lib/embedding';
 import { loadEnvConfig } from '@next/env';
 import { consola } from 'consola';
 
