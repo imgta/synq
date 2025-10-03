@@ -9,7 +9,7 @@ const EXTERNALS = [
 
 export default {
   outputFileTracingIncludes: { '/api/**/*': ['./node_modules/**/*.wasm'] },
-  serverExternalPackages: EXTERNALS,
+  // serverExternalPackages: EXTERNALS,
   output: 'export',
   webpack: cfg => {
     cfg.resolve.alias = {
