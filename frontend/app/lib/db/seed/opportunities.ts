@@ -1,13 +1,14 @@
 import { drizzleDB, tables, inDev, rootDir, eq } from '@/lib/db';
-import { MOCK_OPPORTUNITIES } from "@/lib/db/mock-data";
-import { generateEmbedding } from '@/lib/embed';
+import { MOCK_OPPORTUNITIES, EXTENDED_MOCK_OPPORTUNITIES } from "@/lib/db/mock/opportunities";
+import { generateEmbedding } from '@/lib/embedding';
 import { loadEnvConfig } from '@next/env';
 import { consola } from 'consola';
 
 loadEnvConfig(rootDir, inDev);
 
-type MockOpportunity = (typeof MOCK_OPPORTUNITIES)[number];
-export function createOpportunityProfileInput(opp: MockOpportunity): string {
+type MockOpportunity = (typeof EXTENDED_MOCK_OPPORTUNITIES)[number];
+
+export function createOpportunityInput(opp: MockOpportunity): string {
   const parts: string[] = [];
   const currencyFormatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -15,7 +16,7 @@ export function createOpportunityProfileInput(opp: MockOpportunity): string {
     maximumFractionDigits: 0,
   });
 
-  // Section 1: Core Identity
+  // Core Identity
   parts.push(`Contract Opportunity: ${opp.title}`);
   if (opp.solicitation_number) {
     parts.push(`Solicitation #: ${opp.solicitation_number}`);
@@ -24,12 +25,12 @@ export function createOpportunityProfileInput(opp: MockOpportunity): string {
     parts.push(`Issuing Agency: ${opp.full_parent_path_name.replaceAll('.', ' > ')}`);
   }
 
-  // Section 2: Core Description
+  // Core Description
   if (opp.description) {
     parts.push(`\nSummary of Work:\n${opp.description}`);
   }
 
-  // Section 3: Key Contract Details (Structured Data)
+  // Key Contract Details (Structured Data)
   const details: string[] = [];
   if (opp.naics_code) {
     details.push(`Primary NAICS Code: ${opp.naics_code}`);
@@ -51,22 +52,22 @@ export function createOpportunityProfileInput(opp: MockOpportunity): string {
   if (details.length > 0) {
     parts.push(`\nContract Snapshot:\n- ${details.join('\n- ')}`);
   }
-  // Section 4: High-Signal Requirements (AI-Extracted)
+
+  // High-Signal Requirements (AI-Extracted)
   if (opp.key_requirements?.length) {
     parts.push(`\nMandatory Requirements:\n- ${opp.key_requirements.join('\n- ')}`);
   }
   return parts.join('\n');
 }
 
-
-export async function seedOpportunities() {
+export async function seedOpportunities(mockOpps: MockOpportunity[]) {
   consola.start('Seeding OPPORTUNITIES...');
   const records = [];
-  for (const [idx, opp] of MOCK_OPPORTUNITIES.entries()) {
-    consola.info(`Processing opportunity ${idx + 1}/${MOCK_OPPORTUNITIES.length}: ${opp.title}`);
+  for (const [idx, opp] of mockOpps.entries()) {
+    consola.info(`Processing opportunity ${idx + 1}/${mockOpps.length}: ${opp.title}`);
 
     // generate 384-dim summary embedding using 'summary' model
-    const summaryProfileText = createOpportunityProfileInput(opp);
+    const summaryProfileText = createOpportunityInput(opp);
     const summaryVector = await generateEmbedding(summaryProfileText, { model: 'summary' });
 
     // generate 768-dim fulltext embedding using 'fulltext' model
@@ -85,12 +86,12 @@ export async function seedOpportunities() {
     .values(records)
     .returning({ id: tables.opportunities.id });
   if (!inserts.length) consola.error('Insert Error');
-  consola.success(`Seeded ${MOCK_OPPORTUNITIES.length} opportunities`);
+  consola.success(`Seeded ${mockOpps.length} opportunities`);
 }
 
 async function main() {
   try {
-    await seedOpportunities();
+    await seedOpportunities(EXTENDED_MOCK_OPPORTUNITIES);
     process.exit(0);
   } catch (error) {
     consola.error(error);
@@ -98,13 +99,3 @@ async function main() {
   }
 }
 main();
-
-
-// for (const r of records) {
-//   const update = await db.update(tables.opportunities)
-//     .set({ estimated_value: r.estimated_value })
-//     .where(eq(tables.opportunities.notice_id, r.notice_id))
-//     .returning({ title: tables.opportunities.title });
-//   if (!update) consola.error('Update error');
-// }
-// consola.success(`Updated!`);

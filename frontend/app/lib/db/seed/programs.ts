@@ -1,13 +1,14 @@
 import { drizzleDB, tables, inDev, rootDir, type NewProgram } from '@/lib/db';
-import { MOCK_PROGRAMS } from '@/lib/db/mock-data';
-import { generateEmbedding } from '@/lib/embed';
+import { MOCK_PROGRAMS } from '@/lib/db/mock';
+import { generateEmbedding } from '@/lib/embedding';
 import { loadEnvConfig } from '@next/env';
 import { consola } from 'consola';
 
 loadEnvConfig(rootDir, inDev);
 
 type MockProgram = (typeof MOCK_PROGRAMS)[number];
-export function createProgramProfileInput(prog: MockProgram): string {
+
+export function createProgramInput(prog: MockProgram): string {
   const parts: string[] = [];
   const currencyFormatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -42,7 +43,7 @@ export async function seedPrograms() {
   consola.start('Seeding PROGRAMS...');
   const records = await Promise.all(
     MOCK_PROGRAMS.map(async (prog) => {
-      const profileText = createProgramProfileInput(prog);
+      const profileText = createProgramInput(prog);
       const vector = await generateEmbedding(profileText, { model: 'summary' });
 
       return {

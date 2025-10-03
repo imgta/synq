@@ -1,5 +1,5 @@
 import { drizzleDB, tables, inDev, rootDir, type NewAward } from '@/lib/db';
-import { MOCK_AWARDS } from '@/lib/db/mock-data';
+import { MOCK_AWARDS } from '@/lib/db/mock';
 import { loadEnvConfig } from '@next/env';
 import { consola } from 'consola';
 

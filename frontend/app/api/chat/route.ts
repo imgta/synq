@@ -1,9 +1,8 @@
-import { streamText, convertToModelMessages, tool, UIMessage, generateText, generateObject } from 'ai';
-import { drizzleDB, tables } from '@/lib/db';
-import { generateEmbedding } from '@/lib/embed';
+import { streamText, convertToModelMessages, tool, UIMessage, generateText, generateObject, hasToolCall } from 'ai';
+import { findNaicsCandidates } from '@/api/_actions/find-naics';
+import { findJVPartners } from '@/api/_actions/find-partners';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
-import { cosineDistance, inArray, desc, sql } from 'drizzle-orm';
 
 interface StreamAIRequestBody {
   system: string;
@@ -26,8 +25,9 @@ export async function POST(req: Request) {
     system,
     messages: convertToModelMessages(messages),
     tools: {
+      // tool #1
       classifyBusinessByNAICS: tool({
-        description: 'Analyzes a company description to determine its most accurate NAICS codes and provides a justification for each selection.',
+        description: 'Given a detailed natural language **business description**, this tool identifies and describes potential NAICS codes that fit the company\'s capabilities. Only use this for classifying a company, not for looking up existing codes.',
         inputSchema: z.object({
           description: z.string().describe('A comprehensive description of the business for classification.'),
         }),
@@ -46,14 +46,8 @@ Follow these guidelines:
 2. Write objectively, using formal, bureaucratic wording similar to government documents.
 3. Do not include the business name or any specific NAICS codes.`,
           });
-
-          console.log(summary);
-
           const candidates = await findNaicsCandidates(summary, 10);
           if (!candidates || candidates.length === 0) return { error: 'No relevant NAICS codes found.' };
-
-          console.log(candidates);
-
           const { object: analysis } = await generateObject({
             model: openai(model),
             schema: z.object({
@@ -91,52 +85,10 @@ ${JSON.stringify(candidates, null, 2)}
           return { naicsCodes: analysis.selections };
         },
       }),
+      // tool #2
+      findJVPartners,
     },
+    stopWhen: [hasToolCall('findJVPartners')],
   });
   return result.toUIMessageStreamResponse();
-}
-
-
-/**
- * Finds relevant NAICS codes for a given business description using a hybrid scoring model
- * that combines semantic similarity with code specificity level.
- *
- * @param description The business description to classify.
- * @param limit The number of codes to return.
- * @returns A promise that resolves to an array of NAICS codes with their similarity and final score.
- */
-export async function findNaicsCandidates(description: string, limit = 10) {
-  const db = drizzleDB();
-
-  const queryVector = await generateEmbedding(description, { model: 'summary' });
-
-  const similarity = sql<number>`1 - (${cosineDistance(tables.naics.embedding_summary, queryVector)})`;
-
-  const specificityBonus = sql<number>`
-    CASE 
-      WHEN ${tables.naics.level} = 'national_industry' THEN 0.2
-      WHEN ${tables.naics.level} = 'naics_industry' THEN 0.1
-      ELSE 0
-    END
-  `;
-  const hybridScore = sql<number>`${similarity} + ${specificityBonus}`;
-
-  const results = await db
-    .select({
-      code: tables.naics.code,
-      level: tables.naics.level,
-      title: tables.naics.title,
-      description: tables.naics.description,
-      similarity,
-    })
-    .from(tables.naics)
-    .where(inArray(tables.naics.level, [
-      'national_industry', // 6-digit
-      'naics_industry', // 5-digit
-      'industry_group', // 4-digit
-    ]))
-    .orderBy(desc(hybridScore))
-    .limit(limit);
-
-  return results;
 }

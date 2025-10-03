@@ -1,6 +1,6 @@
 import { drizzleDB, tables, inDev, rootDir, type NewCompany } from '@/lib/db';
-import { generateEmbedding } from '@/lib/embed';
-import { MOCK_COMPANIES } from '@/lib/db/mock-data';
+import { generateEmbedding } from '@/lib/embedding';
+import { MOCK_COMPANIES, EXTENDED_MOCK_COMPANIES } from '@/lib/db/mock/companies';
 import { loadEnvConfig } from '@next/env';
 import { consola } from 'consola';
 
@@ -16,7 +16,7 @@ export type SBACertification = // socio-economic status certifications
 
 type MockCompany = (typeof MOCK_COMPANIES)[number];
 
-export function createCompanyProfileInput(co: MockCompany): string {
+export function createCompanyInput(co: MockCompany): string {
   const parts: string[] = [];
 
   // Section 1: Core Identity and Description
@@ -77,11 +77,11 @@ export function createCompanyProfileInput(co: MockCompany): string {
   return parts.join('\n\n');
 }
 
-export async function seedCompanies() {
+export async function seedCompanies(mockCompanies: MockCompany[]) {
   consola.start('Seeding COMPANIES...');
   const records = await Promise.all(
-    MOCK_COMPANIES.map(async co => {
-      const embeddingText = createCompanyProfileInput(co);
+    mockCompanies.map(async co => {
+      const embeddingText = createCompanyInput(co);
       const vector = await generateEmbedding(embeddingText, { model: 'summary' });
 
       return {
@@ -104,7 +104,7 @@ export async function seedCompanies() {
 
 async function main() {
   try {
-    await seedCompanies();
+    await seedCompanies(EXTENDED_MOCK_COMPANIES);
     process.exit(0);
   } catch (error) {
     consola.error(error);

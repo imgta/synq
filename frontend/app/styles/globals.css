@@ -10,7 +10,6 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
   --radius: 0.625rem;
   --background: oklch(0.96482 0.00686 277.074);
   --foreground: oklch(0.26033 0.00003 271.152);
@@ -46,6 +45,7 @@
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.7853 0.1041 274.7134);
+
 }
 
 @theme inline {
@@ -90,6 +90,12 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  --color-brand: oklch(0.5106 0.2301 276.9656);
+  --color-bot: #fafafa;
+  --bg-selection: oklch(89.324% 0.13541 97.03 / 0.294);
+  --color-caret: rgb(221, 183, 60);
+  --text-selection: oklch(96.754% 0.02598 90.099);
 }
 
 .dark {
@@ -137,4 +143,20 @@
   input[type="color"]:not(:disabled) {
     cursor: pointer;
   }
+}
+
+::selection {
+  background-color: var(--bg-selection);
+  color: var(--card-foreground);
+}
+
+body {
+  caret-color: var(--color-brand);
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE/edge */
+  scrollbar-width: none;     /* firefox */
+  /* hide scrollbar for chrome, safari and opera */
+  &::-webkit-scrollbar { display: none; }
 }

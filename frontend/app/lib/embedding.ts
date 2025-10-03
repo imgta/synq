@@ -4,18 +4,8 @@ import {
   type ProgressCallback,
   type PipelineType,
 } from '@huggingface/transformers';
-import type { Naics, Opportunity } from '@/lib/db';
+import type { Opportunity } from '@/lib/db';
 import { consola } from 'consola';
-
-// https://huggingface.co/Xenova/bge-small-en-v1.5
-// SUMMARIES - 384-dimensions 'Xenova/bge-small-en-v1.5' to embed structured summary text
-// https://huggingface.co/Xenova/bge-base-en-v1.5
-// FULL DOCS - 768-dimensions 'Xenova/bge-base-en-v1.5' to vectorize chunked docs, pdfs, etc.
-
-// 384-dim: Xenova/all-MiniLM-L6-v2, Xenova/bge-small-en-v1.5
-// 512-dim: Xenova/jina-embeddings-v2-small-en
-// 768-dim: Xenova/bge-base-en-v1.5
-// 1024-dim: BAAI/bge-large-en-v1.5
 
 export const EmbeddingModels = {
   /** 384-dimension size model for embedding structured summary texts.*/

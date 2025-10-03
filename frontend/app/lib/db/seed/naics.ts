@@ -1,5 +1,5 @@
 import { drizzleDB, tables, rootDir, inDev, sql, type NewNaics, type Naics } from '@/lib/db';
-import { generateEmbedding } from '@/lib/embed';
+import { generateEmbedding } from '@/lib/embedding';
 import { loadEnvConfig } from '@next/env';
 import { consola } from 'consola';
 import { apiFetch } from '@/api';
