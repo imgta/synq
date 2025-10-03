@@ -7,8 +7,9 @@ import {
 import type { Opportunity } from '@/lib/db';
 import { consola } from 'consola';
 
-env.allowRemoteModels = true;
-env.useBrowserCache = false;
+env.allowLocalModels = false; // skip local model check
+// env.allowRemoteModels = true;
+// env.useBrowserCache = false;
 
 export const EmbeddingModels = {
   /** 384-dimension size model for embedding structured summary texts.*/

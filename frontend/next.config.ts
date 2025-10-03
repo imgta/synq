@@ -10,10 +10,13 @@ const EXTERNALS = [
 export default {
   outputFileTracingIncludes: { '/api/**/*': ['./node_modules/**/*.wasm'] },
   serverExternalPackages: EXTERNALS,
-  webpack(cfg) {
-    cfg.experiments = { asyncWebAssembly: true, layers: true };
-    cfg.externals ||= [];
-    cfg.externals.push({ zipfile: 'commonjs zipfile' });
+  output: 'export',
+  webpack: cfg => {
+    cfg.resolve.alias = {
+      ...cfg.resolve.alias,
+      "sharp$": false,
+      "onnxruntime-node$": false,
+    };
     return cfg;
   },
   experimental: {
