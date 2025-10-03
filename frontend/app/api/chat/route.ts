@@ -88,7 +88,10 @@ ${JSON.stringify(candidates, null, 2)}
       // tool #2
       findJVPartners,
     },
-    stopWhen: [hasToolCall('findJVPartners')],
+    stopWhen: [
+      hasToolCall('classifyBusinessByNAICS'),
+      hasToolCall('findJVPartners'),
+    ],
   });
   return result.toUIMessageStreamResponse();
 }

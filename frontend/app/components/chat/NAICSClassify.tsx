@@ -31,7 +31,9 @@ export function NAICSClassification({ data }: NAICSClassificationProps) {
       </CardHeader>
       <CardContent className="space-y-3">
         {naicsCodes.map((naics, index) => (
-          <div key={naics.code} className="p-4 rounded-lg border border-foreground/10 bg-card hover:bg-brand/5 transition-colors">
+          <div
+            key={`${index}-${naics.code}`}
+            className="p-4 rounded-lg border border-foreground/10 bg-card hover:bg-brand/5 transition-colors">
             <div className="flex items-start justify-between gap-4 mb-3">
               <div className="flex items-start gap-3">
                 <div className="flex items-center justify-center size-6 p-2 rounded-full bg-primary/5 text-primary font-semibold text-xs">
