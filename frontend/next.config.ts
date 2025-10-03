@@ -2,7 +2,6 @@ import { type NextConfig } from 'next';
 import path from 'path';
 
 const EXTERNALS = [
-  '@huggingface/transformers',
   'onnxruntime-node',
   'sharp',
 ];
