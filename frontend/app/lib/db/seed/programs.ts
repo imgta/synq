@@ -1,6 +1,6 @@
 import { drizzleDB, tables, inDev, rootDir, type NewProgram } from '@/lib/db';
 import { MOCK_PROGRAMS } from '@/lib/db/mock';
-import { generateEmbedding } from '@/lib/embedding';
+import { OpenAiEmbeddingModels } from '@/lib/embedding';
 import { loadEnvConfig } from '@next/env';
 import { consola } from 'consola';
 
@@ -44,7 +44,7 @@ export async function seedPrograms() {
   const records = await Promise.all(
     MOCK_PROGRAMS.map(async (prog) => {
       const profileText = createProgramInput(prog);
-      const vector = await generateEmbedding(profileText, { model: 'summary' });
+      const vector = await OpenAiEmbeddingModels(profileText, { model: 'summary' });
 
       return {
         ...prog,

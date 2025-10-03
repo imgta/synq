@@ -80,7 +80,7 @@ import { consola } from 'consola';
 //  * @param model The model to use ('summary' or 'fulltext').
 //  * @returns A promise that resolves to a vector number array.
 //  */
-// export async function generateEmbedding(text: string, opt?: { model: ModelName; }) {
+// export async function OpenAiEmbeddingModels(text: string, opt?: { model: ModelName; }) {
 //   const model = opt?.model ?? 'summary';
 //   if (!text || text.trim().length === 0) throw new Error('Cannot generate embedding for empty text');
 
