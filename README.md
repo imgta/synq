@@ -68,7 +68,7 @@ We're Sentinel Microsystems (UEI SENTINEL92M) going after GD-2025-002 (WOSB). Gi
 ```
 
 ```
-For Tristimuli (UEI TRISTI65M, WOSB) targeting STE-2025-005 (coalition VR/AR training), surface 8 JV candidates covering HLA/DIS interoperability, GEOINT terrain generation, and multilingual voice/UX.
+For Tristimuli (UEI TRISTI65M, WOSB) targeting STE-2025-005 (WOSB, coalition VR/AR training), surface 8 JV candidates to cover (a) HLA/DIS interoperability, (b) GEOINT terrain generation (541370/541710), and (c) multilingual voice/UX (541930). Return distance, NAICS coverage, set-aside status, and how they complement Tristimuli’s VR content pipeline.
 ```
 
 ## Directory Structure
