@@ -9,16 +9,17 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, Cell
 } from 'recharts';
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Building2, Plus, Target, Users } from 'lucide-react';
+import { Building2, MoveRight, Plus, Target, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { MOCK_COMPANIES as mockComps, EXTENDED_MOCK_COMPANIES } from '@/lib/db/mock/companies';
 import { MOCK_OPPORTUNITIES as mockOpps, EXTENDED_MOCK_OPPORTUNITIES } from '@/lib/db/mock/opportunities';
 import { computeFitScore, FitScoreMetrics, OpportunityFitMetrics, CompanyFitMetrics, Reason } from '@/utils';
-import { TooltipTrigger, Tooltip, TooltipContent } from '@/components/ui/tooltip';
+import { TooltipTrigger, Tooltip, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { FitTooltip } from '@/components/dataviz/fit-tooltip';
 import { cn } from '@/lib/utils';
 import { EntityAccordion, type Entity } from '@/components/dataviz/entity-accordion';
+import { Toggle } from '../ui/toggle';
 
 const MOCK_COMPANIES = [...mockComps, ...EXTENDED_MOCK_COMPANIES];
 const MOCK_OPPORTUNITIES = [...mockOpps, ...EXTENDED_MOCK_OPPORTUNITIES];
@@ -262,9 +263,9 @@ export function DataRadarChart({ initial, ref }: DataRadarChartProps) {
 
     if (noSelection) {
       return (
-        <div className="h-[400px] w-full flex items-center justify-center border border-dashed border-border/40 rounded-lg">
+        <div className="px-4 h-40 w-full flex items-center justify-center border border-dashed border-border/40 rounded-lg">
           <p className="text-sm text-muted-foreground">
-            Select at least one company and one opportunity to compare
+            Add companies/opportunities to compare
           </p>
         </div>
       );
@@ -280,10 +281,10 @@ export function DataRadarChart({ initial, ref }: DataRadarChartProps) {
 
       if (!canUsePivotRadar) {
         return (
-          <div className="h-[400px] w-full flex items-center justify-center border border-dashed border-border/40 rounded-lg">
+          <div className="px-4 h-40 w-full flex items-center justify-center border border-dashed border-border/40 rounded-lg">
             <div className="text-center space-y-2">
               <p className="text-sm text-muted-foreground">
-                Pick at least one company and one opportunity
+                Add companies/opportunities to compare
               </p>
               <p className="text-xs text-muted-foreground/70">
                 Metrics view compares NAICS / Set-Aside / Size / Capability
@@ -386,8 +387,9 @@ export function DataRadarChart({ initial, ref }: DataRadarChartProps) {
   return (
     <Card ref={containerRef} className="border-border/20 shadow-sm bg-card/50 backdrop-blur-sm p-8">
       <div className="space-y-6">
+
         {/* HEADER */}
-        <section className="flex items-start justify-between gap-6">
+        <section className="flex sm:items-start sm:justify-between">
           <div className="flex-1 space-y-2">
             <div className="flex items-center gap-2">
               {isCompanyView
@@ -401,55 +403,45 @@ export function DataRadarChart({ initial, ref }: DataRadarChartProps) {
                 }
               </h3>
             </div>
-            {/* VIEW TOGGLE */}
-            <Tabs value={viewMode} onValueChange={v => setViewMode(v as ChartViewMode)}>
-              <TabsList>
-                <TabsTrigger value="opportunity" className="text-xs">
-                  <Users className="size-3.5 mr-1" />
-                  Companies
-                </TabsTrigger>
-                <TabsTrigger value="company" className="text-xs">
-                  <Target className="size-3.5 mr-1" />
-                  Opportunities
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-            {isCompanyView
-              ? (<p className="text-sm text-muted-foreground">
-                Comparing {selectOpportunities.length} {selectOpportunities.length === 1 ? "opportunity" : "opportunities"} across{" "}
-                {selectCompanies.length} {selectCompanies.length === 1 ? "company" : "companies"}
-              </p>)
-              : (<p className="text-sm text-muted-foreground">
-                Comparing {selectCompanies.length} {selectCompanies.length === 1 ? "company" : "companies"} across{" "}
-                {selectOpportunities.length} {selectOpportunities.length === 1 ? "opportunity" : "opportunities"}
-              </p>)
-            }
           </div>
 
-          <div className="items-center space-x-1 space-y-1">
-            {/* MULTI-SELECT */}
-            <CompanySelector select={selectCompanies} onToggle={toggleCompany} />
-            <OpportunitySelector select={selectOpportunities} onToggle={toggleOpportunity} />
-            <div className="flex justify-end">
-              {/* PIVOT TOGGLE */}
-              <Tabs value={chartMode} onValueChange={v => setChartMode(v as ChartMode)}>
-                <TabsList>
-                  <TabsTrigger value="standard" className="text-xs">Standard</TabsTrigger>
-                  <TabsTrigger value="pivot" className="text-xs">Metrics</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-          </div>
+          {/* VIEW TOGGLE */}
+          <Tabs value={viewMode} onValueChange={v => setViewMode(v as ChartViewMode)}>
+            <TabsList>
+              <TabsTrigger value="opportunity" className="text-xs">
+                <Users className="size-3.5 mr-1" />
+                <span className="hidden sm:block">Companies</span>
+              </TabsTrigger>
+              <TabsTrigger value="company" className="text-xs">
+                <Target className="size-3.5 mr-1" />
+                <span className="hidden sm:block">Opportunities</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </section>
 
+        {/* MULTI-SELECT */}
+        <div className={cn(
+          "flex justify-center items-center space-x-1 rounded-sm py-1.5",
+          "border border-border/15 transition-[border-color,border-style] duration-150",
+          "has-[.entity-trigger:hover]:border-dashed has-[.entity-trigger:hover]:border-border/40",
+          "has-[.entity-content:hover]:border-dashed has-[.entity-content:hover]:border-border/40",
+        )}>
+          <EntitySelector kind="company" select={selectCompanies} onToggle={toggleCompany} />
+          <MoveRight className={cn(
+            "size-4 transition-transform duration-150",
+            viewMode === "company" ? "rotate-180" : "rotate-0"
+          )} />
+          <EntitySelector kind="opportunity" select={selectOpportunities} onToggle={toggleCompany} />
+        </div>
+
         {/* ENTITY ACCORDION */}
-        <section className="space-y-3">
+        <section className="space-y-2">
           {entities.length ? (
             <EntityAccordion
               entities={entities}
-              defaultOpenIndex={0}
-              maxOtherNaics={3}
-              className="rounded-lg border border-border/20 bg-secondary/30"
+              maxOtherNaics={4}
+              className="rounded-sm border border-border/20 bg-secondary/30"
             />
           ) : (
             <div className="p-4 rounded-lg border border-dashed border-border/40">
@@ -459,6 +451,37 @@ export function DataRadarChart({ initial, ref }: DataRadarChartProps) {
             </div>
           )}
         </section>
+
+        {/* METRICS VIEW TOGGLE */}
+        <div className="flex items-center justify-end">
+          <div className="font-metric">
+            {chartMode === 'pivot' ? 'Metric' : 'Series'}
+          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Toggle
+                  pressed={chartMode === 'pivot'}
+                  onPressedChange={p => setChartMode(p ? 'pivot' : 'standard')}
+                  aria-label="Toggle metrics view"
+                  className="size-8 p-0 active:scale-110"
+                  variant="default"
+                >
+                  {chartMode === 'pivot'
+                    ? <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5.5">
+                      <path fill="currentColor" d="M11 19.475L6 16.6q-.475-.275-.737-.737T5 14.875v-5.75q0-.525.263-.987T6 7.4l5-2.875q.475-.275 1-.275t1 .275L18 7.4q.475.275.738.738t.262.987v5.75q0 .525-.262.988T18 16.6l-5 2.875q-.475.275-1 .275t-1-.275M3 8q-.425 0-.712-.288T2 7V4q0-.825.588-1.412T4 2h3q.425 0 .713.288T8 3t-.288.713T7 4H4v3q0 .425-.288.713T3 8m1 14q-.825 0-1.412-.587T2 20v-3q0-.425.288-.712T3 16t.713.288T4 17v3h3q.425 0 .713.288T8 21t-.288.713T7 22zm16 0h-3q-.425 0-.712-.288T16 21t.288-.712T17 20h3v-3q0-.425.288-.712T21 16t.713.288T22 17v3q0 .825-.587 1.413T20 22m0-15V4h-3q-.425 0-.712-.288T16 3t.288-.712T17 2h3q.825 0 1.413.588T22 4v3q0 .425-.288.713T21 8t-.712-.288T20 7M8.05 8.525l-1.05.6v1.125l4 2.325v4.6l1 .575l1-.575v-4.6l4-2.325V9.125l-1.05-.6L12 10.85z" />
+                    </svg>
+                    : <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5.5">
+                      <path fill="currentColor" d="M11 19.475L6 16.6q-.475-.275-.737-.725t-.263-1v-5.75q0-.55.263-1T6 7.4l5-2.875q.475-.275 1-.275t1 .275L18 7.4q.475.275.738.725t.262 1v5.75q0 .55-.262 1T18 16.6l-5 2.875q-.475.275-1 .275t-1-.275m0-2.3v-4.6L7 10.25v4.625zm2 0l4-2.3V10.25l-4 2.325zM3 8q-.425 0-.712-.288T2 7V4q0-.825.588-1.412T4 2h3q.425 0 .713.288T8 3t-.288.713T7 4H4v3q0 .425-.288.713T3 8m1 14q-.825 0-1.412-.587T2 20v-3q0-.425.288-.712T3 16t.713.288T4 17v3h3q.425 0 .713.288T8 21t-.288.713T7 22zm16 0h-3q-.425 0-.712-.288T16 21t.288-.712T17 20h3v-3q0-.425.288-.712T21 16t.713.288T22 17v3q0 .825-.587 1.413T20 22m0-15V4h-3q-.425 0-.712-.288T16 3t.288-.712T17 2h3q.825 0 1.413.588T22 4v3q0 .425-.288.713T21 8t-.712-.288T20 7m-8 3.85l3.95-2.325L12 6.25L8.05 8.525zm-1 1.725" />
+                    </svg>}
+                </Toggle>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-bot/90 backdrop-blur-[1.5px] text-[#222]">
+                {chartMode === 'pivot' ? 'Metrics view' : 'Series view'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
 
         {/* RADAR CHART */}
         {renderChart(isCompanyView)}
@@ -504,7 +527,6 @@ export function DataRadarChart({ initial, ref }: DataRadarChartProps) {
   );
 }
 
-
 const CHART_COLORS = [
   'oklch(0.55 0.15 264)', // primary blue
   'oklch(0.65 0.15 330)', // purple
@@ -515,6 +537,7 @@ const CHART_COLORS = [
   'oklch(0.55 0.15 210)', // cyan
   'oklch(0.65 0.15 300)', // magenta
 ];
+
 
 function StandardRadar({ rows, series, categoryKey }: { rows: any[]; series: string[]; categoryKey: string; }) {
   const [hoverSeries, setHoverSeries] = useState<string | null>(null);
@@ -530,7 +553,7 @@ function StandardRadar({ rows, series, categoryKey }: { rows: any[]; series: str
     : undefined;
 
   return (
-    <div className="h-[400px] w-full">
+    <div className="h-[450px] w-full">
       <ChartContainer config={chartConfig} className="size-full">
         <RadarChart data={rows}>
           <PolarGrid stroke="var(--muted-foreground)" strokeWidth={1} />
@@ -683,6 +706,8 @@ function PivotRadar({ rows, series }: { rows: any[]; series: string[]; }) {
     </div>
   );
 }
+
+
 
 interface StackedBarsProps {
   rows: any[];
@@ -875,49 +900,61 @@ function StackedBars({
 }
 
 
-function CompanySelector({ select, onToggle }: { select: string[]; onToggle: (name: string) => void; }) {
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" className="border-border/30 bg-background hover:bg-bot">
-          <Plus className="size-3" />
-          Companies ({select.length})
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 max-h-96 overflow-y-auto border-0" align="end">
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium">Select Companies</h4>
-          <div className="space-y-2">
-            {MOCK_COMPANIES.map(c => (
-              <div key={c.name} className="flex items-start gap-2">
-                <Checkbox id={c.name} checked={select.includes(c.name)} onCheckedChange={() => onToggle(c.name)} />
-                <Label htmlFor={c.name} className="text-xs cursor-pointer">{c.name}</Label>
-              </div>
-            ))}
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
+type SelectorItem = { id: string; label: string; };
+
+interface EntitySelectorProps {
+  kind: 'company' | 'opportunity';
+  select: string[];
+  onToggle: (id: string) => void;
+  items?: SelectorItem[];
+  align?: 'start' | 'center' | 'end';
 }
 
-function OpportunitySelector({ select, onToggle }: { select: string[]; onToggle: (id: string) => void; }) {
+export function EntitySelector({
+  kind,
+  select,
+  onToggle,
+  items,
+  align = 'end',
+}: EntitySelectorProps) {
+  const label = kind === 'company' ? 'Companies' : 'Opportunities';
+
+  // fall back to mock lists
+  const list: SelectorItem[] =
+    items ??
+    (kind === 'company'
+      ? MOCK_COMPANIES.map(c => ({ id: c.name, label: c.name }))
+      : MOCK_OPPORTUNITIES.map(o => ({ id: o.notice_id, label: o.title })));
+
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="border-border/30 bg-background hover:bg-bot">
-          <Plus className="size-3" />
-          Opportunities ({select.length})
+        <Button
+          variant="outline"
+          className="entity-trigger group gap-1.5 mx-0 border-border/0 hover:border-border/30 bg-transparent shadow-none hover:bg-bot"
+        >
+          <Plus className="hidden group-hover:inline-flex size-3" />
+          {label} ({select.length})
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 max-h-96 overflow-y-auto border-0" align="end">
+
+      <PopoverContent className="entity-content w-80 max-h-96 overflow-y-auto border-0" align={align}>
         <div className="space-y-3">
-          <h4 className="text-sm font-medium">Select Opportunities</h4>
+          <h4 className="text-sm font-medium">Select {label}</h4>
           <div className="space-y-2">
-            {MOCK_OPPORTUNITIES.map((o) => (
-              <div key={o.notice_id} className="flex items-start gap-2">
-                <Checkbox id={o.notice_id} checked={select.includes(o.notice_id)} onCheckedChange={() => onToggle(o.notice_id)} />
-                <Label htmlFor={o.notice_id} className="text-xs cursor-pointer">{o.title}</Label>
+            {list.map((item) => (
+              <div key={item.id} className="flex items-start gap-2">
+                <Checkbox
+                  id={`${kind}-${item.id}`}
+                  checked={select.includes(item.id)}
+                  onCheckedChange={() => onToggle(item.id)}
+                />
+                <Label
+                  htmlFor={`${kind}-${item.id}`}
+                  className="text-xs cursor-pointer"
+                >
+                  {item.label}
+                </Label>
               </div>
             ))}
           </div>

@@ -46,7 +46,7 @@ export function EntityAccordion({
   entities,
   className,
   defaultOpenIndex = 0,
-  maxOtherNaics = 3,
+  maxOtherNaics = 4,
 }: EntityAccordionProps) {
   return (
     <Accordion
@@ -153,7 +153,7 @@ export function EntityAccordion({
                   <div className="flex items-center gap-1">
                     <span className="text-xs text-muted-foreground">Secondary:</span>
                     <div className="flex flex-wrap gap-1">
-                      {entity.secondary_naics.map((n) => (
+                      {entity.secondary_naics.slice(0, maxOtherNaics).map(n => (
                         <Badge key={n} variant="outline" className="text-xs bg-secondary border-border/40">
                           {n}
                         </Badge>

@@ -1,5 +1,5 @@
 import { drizzleDB, tables, inDev, rootDir, type NewCompany } from '@/lib/db';
-import { generateOpenAiEmbedding } from '@/lib/embedding';
+import { generateOpenAiEmbedding } from '@/lib/embedding.server';
 import { MOCK_COMPANIES, EXTENDED_MOCK_COMPANIES } from '@/lib/db/mock/companies';
 import { loadEnvConfig } from '@next/env';
 import { consola } from 'consola';

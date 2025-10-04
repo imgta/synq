@@ -3,6 +3,8 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@source "../node_modules/streamdown/dist/index.js";
+
 :root {
   scroll-behavior: smooth;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;

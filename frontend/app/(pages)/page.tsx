@@ -5,8 +5,10 @@ import { useRef, useState } from 'react';
 import { Sparkles, Earth, ChartNoAxesCombined, Cctv, Cpu, Blocks, Radar } from 'lucide-react';
 import { ChartHandle, DataRadarChart, type CompareOptions } from '@/components/dataviz/radar-chart';
 import { ChatMessage, PartnerCompareArgs } from '@/components/chat/ChatMessage';
-import { QuickCompareCard } from '@/components/quick-compare-card';
-import { SearchBar } from '@/components/SearchBar';
+import { QuickCompareCard } from '@/components/chat/quick-compare-card';
+import { SuggestionBadges } from '@/components/chat/SuggestionBadges';
+import { SearchBar } from '@/components/chat/SearchBar';
+
 
 export default function Index() {
   const [input, setInput] = useState('');
@@ -48,9 +50,16 @@ export default function Index() {
     });
   }
 
-
-  async function onSubmit() { sendMessage({ text: input }); setInput(''); }
+  async function onSubmit() {
+    sendMessage({ text: input });
+    setInput('');
+  }
   function onClear() { setSubmitted(false); setInput(''); }
+
+  function onSuggestClick(suggestion: string) {
+    setSubmitted(true);
+    sendMessage({ text: suggestion });
+  }
 
   return (
     <main className="max-w-7xl mx-auto sm:px-6">
@@ -62,7 +71,9 @@ export default function Index() {
           </div>
           <h1 className="text-8xl mb-4 font-soehne font-medium">SynQ</h1>
 
-          <h2 className="font-soehne tracking-wide text-foreground/85 scale-95">From NAICS codes to lucrative joint ventures&mdash;smarter, simpler, SynQ.</h2>
+          <h2 className="font-soehne tracking-wide text-foreground/85 scale-95">
+            From NAICS codes to lucrative joint ventures&mdash;smarter, simpler, SynQ.
+          </h2>
         </div>
 
         <section className="flex flex-col sm:px-4 w-full max-w-4xl mx-auto mb-4 gap-6">
@@ -71,13 +82,21 @@ export default function Index() {
           ))}
         </section>
 
-        <SearchBar placeholder="Ask about which NAICS codes best fit your business..."
-          input={input}
-          submitted={submitted}
-          setInput={setInput}
-          onSubmit={onSubmit}
-          onClear={onClear}
-        />
+        <section className="px-4 w-full max-w-3xl mx-auto mb-3">
+          <SuggestionBadges
+            onClick={prompt => { onSuggestClick(prompt); }}
+          />
+        </section>
+
+        <section className="justify-center">
+          <SearchBar placeholder="Ask about which NAICS codes best fit your business..."
+            input={input}
+            submitted={submitted}
+            setInput={setInput}
+            onSubmit={onSubmit}
+            onClear={onClear}
+          />
+        </section>
 
         <section className="px-4 sm:px-8 w-full max-w-4xl mx-auto mb-10 space-y-2">
           <h3 className="px-2 text-sm font-soehne">Quick Compare</h3>

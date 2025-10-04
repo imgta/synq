@@ -1,4 +1,4 @@
-import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export default async function AppLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
 

@@ -27,6 +27,9 @@
     "paths": {
       "@/*": [
         "./app/*"
+      ],
+      "@/actions/*": [
+        "./app/api/chat/(actions)/*"
       ]
     }
   },

@@ -30,7 +30,7 @@ export function SearchBar({
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder={placeholder ?? "Find opportunities..."}
-            className="bg-background focus-visible:ring-0 min-h-10"
+            className="bg-bot focus-visible:ring-0 min-h-10"
           />
         </div>
         <div className="flex sm:flex-row items-center justify-center">

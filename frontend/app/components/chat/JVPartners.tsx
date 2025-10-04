@@ -56,11 +56,11 @@ export function JVPartners({ data, onPartnerClick }: JVPartnersProps) {
 
   return (
     <TooltipProvider>
-      <section className="rounded-2xl bg-card text-foreground p-6 space-y-4 border">
+      <section className="rounded-xl bg-card text-foreground p-4 sm:p-6 space-y-4 border border-border/10">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">Joint Venture Partner Recommendations</h3>
-          <div className="text-sm text-muted-foreground">
-            Preselect sample size: <span className="font-mono">{sampleSize}</span>
+          <h3 className="text-lg font-semibold font-soehne">Joint Venture Partner Recommendations</h3>
+          <div className="hidden sm:block text-sm text-muted-foreground font-metric">
+            Sample size: {sampleSize}
           </div>
         </div>
 
@@ -82,8 +82,8 @@ export function JVPartners({ data, onPartnerClick }: JVPartnersProps) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left border-b border-border">
-                <th className="py-2 pr-3 font-semibold">JV Candidate</th>
+              <tr className="text-left border-b border-border/50 font-metric text-base">
+                <th className="py-2 px-3 font-semibold">JV Candidate</th>
                 <th className="py-2 px-3 font-semibold text-center w-24">Fit Score</th>
                 <th className="py-2 px-3 font-semibold text-center w-36">NAICS Coverage</th>
                 <th className="py-2 px-3 font-semibold text-center w-24">Set-Aside</th>

@@ -1,5 +1,5 @@
 import { drizzleDB, tables, rootDir, inDev, sql, type NewNaics, type Naics } from '@/lib/db';
-import { generateOpenAiEmbedding } from '@/lib/embedding';
+import { generateOpenAiEmbedding } from '@/lib/embedding.server';
 import { loadEnvConfig } from '@next/env';
 import { consola } from 'consola';
 import { apiFetch } from '@/api';
