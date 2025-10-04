@@ -21,7 +21,7 @@ export function SearchBar({
   placeholder,
 }: SearchBarProps) {
   return (
-    <form className="mb-6 px-8"
+    <form className="mb-4 px-4 sm:px-8"
       onSubmit={async e => { e.preventDefault(); await onSubmit(); }}
     >
       <div className="flex justify-center flex-col sm:flex-row sm:items-start space-y-4 sm:space-y-0 sm:space-x-2">

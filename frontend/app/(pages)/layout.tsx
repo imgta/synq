@@ -5,7 +5,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
   return (
     <>
       <div className="container bg-background mx-auto px-4 my-4">
-        <header className="sm:mt-8">
+        <header className="px-6 sm:mt-8">
           <ThemeToggle />
         </header>
 

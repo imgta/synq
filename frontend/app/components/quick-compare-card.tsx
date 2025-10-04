@@ -33,19 +33,21 @@ export function QuickCompareCard({
         }
       }}
       className={cn(
-        'group relative p-5 sm:p-6 h-full',
-        'bg-card/80 border-border/10 gap-2',
+        'group relative p-4 sm:p-6 h-full',
+        'bg-card/80 border-border/10 gap-1 sm:gap-2',
         'hover:bg-background transition-colors',
         'cursor-pointer rounded-xl',
         className,
       )}
     >
 
-      <div className="inline-flex items-center justify-center rounded-full bg-primary/5 text-primary/90 size-8 group-hover:bg-white">
+      <div className="hidden sm:inline-flex items-center justify-center rounded-full bg-primary/5 text-primary/90 size-8 group-hover:bg-white">
         {icon}
       </div>
 
-      <h4 className="sm:text-lg font-medium text-foreground tracking-tight font-metric">{title}</h4>
+      <h4 className="sm:text-lg font-medium text-foreground tracking-tight font-metric">
+        {title}
+      </h4>
       <p className="text-sm text-muted-foreground line-clamp-2">{subheader}</p>
 
       {/* badges */}

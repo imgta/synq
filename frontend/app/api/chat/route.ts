@@ -1,4 +1,4 @@
-import { streamText, convertToModelMessages, tool, UIMessage, generateText, generateObject, hasToolCall } from 'ai';
+import { streamText, convertToModelMessages, tool, UIMessage, generateText, generateObject, hasToolCall, stepCountIs } from 'ai';
 import { findNaicsCandidates } from '@/api/_actions/find-naics';
 import { findJVPartners } from '@/api/_actions/find-partners';
 import { openai } from '@ai-sdk/openai';
@@ -92,6 +92,7 @@ ${JSON.stringify(candidates, null, 2)}
     stopWhen: [
       hasToolCall('classifyBusinessByNAICS'),
       hasToolCall('findJVPartners'),
+      stepCountIs(1),
     ],
   });
   return result.toUIMessageStreamResponse();

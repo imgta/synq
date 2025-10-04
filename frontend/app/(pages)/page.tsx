@@ -53,9 +53,9 @@ export default function Index() {
   function onClear() { setSubmitted(false); setInput(''); }
 
   return (
-    <main className="max-w-7xl mx-auto px-6">
+    <main className="max-w-7xl mx-auto sm:px-6">
       <div className="w-full min-h-dvh sm:min-h-0 flex flex-col ">
-        <div className="py-24 text-center">
+        <div className="py-12 sm:py-24 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-none border border-muted-foreground/25 text-foreground text-sm mb-6 ml-2">
             <Sparkles className="size-3 text-primary/90" />
             <span>AI-powered government contracting engine</span>
@@ -65,7 +65,7 @@ export default function Index() {
           <h2 className="font-soehne tracking-wide text-foreground/85 scale-95">From NAICS codes to lucrative joint ventures&mdash;smarter, simpler, SynQ.</h2>
         </div>
 
-        <section className="flex flex-col px-4 w-full max-w-4xl mx-auto mb-4 gap-6">
+        <section className="flex flex-col sm:px-4 w-full max-w-4xl mx-auto mb-4 gap-6">
           {messages.map(m => (
             <ChatMessage key={m.id} message={m} onPartnerClick={renderPartnerCompare} />
           ))}
@@ -79,7 +79,7 @@ export default function Index() {
           onClear={onClear}
         />
 
-        <section className="px-8 w-full max-w-4xl mx-auto mb-10 space-y-2">
+        <section className="px-4 sm:px-8 w-full max-w-4xl mx-auto mb-10 space-y-2">
           <h3 className="px-2 text-sm font-soehne">Quick Compare</h3>
           <div className="rounded-xl overflow-hidden">
             <div className="grid gap-1 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
