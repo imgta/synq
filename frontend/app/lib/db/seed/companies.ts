@@ -82,7 +82,7 @@ export async function seedCompanies(mockCompanies: MockCompany[]) {
   const records = await Promise.all(
     mockCompanies.map(async co => {
       const embeddingText = createCompanyInput(co);
-      const vector = await generateOpenAiEmbedding(embeddingText, { model: 'summary' });
+      const vector = await generateOpenAiEmbedding(embeddingText, { modelType: 'summary' });
 
       return {
         ...co,
