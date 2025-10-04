@@ -35,7 +35,7 @@ export function SuggestionBadges({ onClick, className }: SuggestionBadgesProps) 
           key={title}
           variant="outline"
           onClick={() => onClick(prompt)}
-          className="cursor-pointer rounded-lg px-3 py-1 text-[11px] sm:text-xs border-border/20 bg-background hover:bg-bot/95 active:scale-95 transition select-none"
+          className="cursor-pointer rounded-lg px-3 py-1 text-[11px] sm:text-xs border-border/20 bg-background hover:bg-bot/95 hover:text-slate-900 active:scale-95 transition select-none"
         >
           {title}
         </Badge>

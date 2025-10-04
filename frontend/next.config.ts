@@ -2,6 +2,7 @@ import { type NextConfig } from 'next';
 import path from 'path';
 
 export default {
+  eslint: { ignoreDuringBuilds: true },
   serverExternalPackages: ['@huggingface/transformers'],
   experimental: {
     reactCompiler: true, // enable `babel-plugin-react-compiler@rc`

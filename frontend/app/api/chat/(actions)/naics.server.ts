@@ -1,7 +1,7 @@
 'use server';
 
 import { cosineDistance, inArray, desc, sql } from 'drizzle-orm';
-import { TransformersEmbeddingPipeline } from '@/lib/embedding.server';
+import { TransformersEmbeddingPipeline, generateOpenAiEmbedding } from '@/lib/embedding.server';
 import { generateText, generateObject } from 'ai';
 import { drizzleDB, tables } from '@/lib/db';
 import { openai } from '@ai-sdk/openai';
@@ -22,7 +22,7 @@ export async function getNaicsCandidates(description: string | number[], limit =
   const notVector = typeof description === 'string';
   if (notVector) consola.info('INITIATING CLIENT EMBEDDING PIPELINE');
   const queryVector = notVector
-    ? await TransformersEmbeddingPipeline.generateEmbedding(description, 'summary')
+    ? await generateOpenAiEmbedding(description, { modelType: 'summary' })
     : description;
 
   const similarity = sql<number>`1 - (${cosineDistance(tables.naics.embedding_summary, queryVector)})`;
