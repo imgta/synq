@@ -71,7 +71,7 @@ export async function seedOpportunities(mockOpps: MockOpportunity[]) {
     const summaryVector = await generateOpenAiEmbedding(summaryProfileText, { modelType: 'summary' });
 
     // generate 768-dim fulltext embedding using 'fulltext' model
-    const fulltextVector = await generateOpenAiEmbedding(opp.description, { model: 'fulltext' });
+    const fulltextVector = await generateOpenAiEmbedding(opp.description, { modelType: 'fulltext' });
 
     records.push({
       ...opp,
