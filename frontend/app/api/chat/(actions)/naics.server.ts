@@ -1,11 +1,10 @@
 'use server';
 
 import { cosineDistance, inArray, desc, sql } from 'drizzle-orm';
-import { TransformersEmbeddingPipeline, generateOpenAiEmbedding } from '@/lib/embedding.server';
+import { generateOpenAiEmbedding } from '@/lib/embedding.server';
 import { generateText, generateObject } from 'ai';
 import { drizzleDB, tables } from '@/lib/db';
 import { openai } from '@ai-sdk/openai';
-import consola from 'consola';
 import { z } from 'zod';
 
 /**
@@ -16,14 +15,9 @@ import { z } from 'zod';
  * @param limit The number of codes to return.
  * @returns A promise that resolves to an array of NAICS codes with their similarity and final score.
  */
-export async function getNaicsCandidates(description: string | number[], limit = 8) {
+export async function getNaicsCandidates(description: string, limit = 8) {
   const db = drizzleDB();
-
-  const notVector = typeof description === 'string';
-  if (notVector) consola.info('INITIATING CLIENT EMBEDDING PIPELINE');
-  const queryVector = notVector
-    ? await generateOpenAiEmbedding(description, { modelType: 'summary' })
-    : description;
+  const queryVector = await generateOpenAiEmbedding(description, { modelType: 'summary' });
 
   const similarity = sql<number>`1 - (${cosineDistance(tables.naics.embedding_summary, queryVector)})`;
 

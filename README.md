@@ -3,7 +3,7 @@ An AI-Powered Matchmaking Engine for U.S. Defense Contracting Joint Ventures
 
 [Live site](https://synq-pi.vercel.app)
 
-See [sample queries](#sample-queries) for preselected queries to try.
+Try clicking on one of the sample query suggestion badges!
 
 **The Problem:** Government contracting is fiercely competitive. Companies, especially smaller ones, often lack the full range of capabilities required to bid on large, complex contract opportunities. They need to form strategic partnerships (joint ventures) to fill these gaps, but discovering the right partners is a slow, manual, and relationship-driven process.
 
@@ -56,19 +56,6 @@ pnpm i
 2. Run the Next.js server on `localhost:3000`
 ```sh
 pnpm run dev
-```
-
-## Sample queries
-```
-We're Pathrender Logistics (UEI PATHRENDER220M). Target CBRN Equipment Rapid Deployment and Logistics. Show 10 candidates, with distance and set-aside status.
-```
-
-```
-We're Sentinel Microsystems (UEI SENTINEL92M) going after GD-2025-002 (WOSB). Give me 8 raw candidates with distance, NAICS coverage, and set-aside status.
-```
-
-```
-For Tristimuli (UEI TRISTI65M, WOSB) targeting STE-2025-005 (WOSB, coalition VR/AR training), surface 8 JV candidates to cover (a) HLA/DIS interoperability, (b) GEOINT terrain generation (541370/541710), and (c) multilingual voice/UX (541930). Return distance, NAICS coverage, set-aside status, and how they complement Tristimuli’s VR content pipeline.
 ```
 
 ## Directory Structure
