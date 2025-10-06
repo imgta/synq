@@ -432,7 +432,7 @@ export function DataRadarChart({ initial, ref }: DataRadarChartProps) {
             "size-4 transition-transform duration-150",
             viewMode === "company" ? "rotate-180" : "rotate-0"
           )} />
-          <EntitySelector kind="opportunity" select={selectOpportunities} onToggle={toggleCompany} />
+          <EntitySelector kind="opportunity" select={selectOpportunities} onToggle={toggleOpportunity} />
         </div>
 
         {/* ENTITY ACCORDION */}
