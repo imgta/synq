@@ -1,5 +1,3 @@
-'use server';
-
 import { eq, ne, and, ilike, isNotNull, cosineDistance } from 'drizzle-orm';
 import { drizzleDB, tables } from '@/lib/db';
 import { consola } from 'consola';
