@@ -1,6 +1,6 @@
 import { drizzleDB, tables, inDev, rootDir, type NewProgram } from '@/lib/db';
 import { MOCK_PROGRAMS } from '@/lib/db/mock';
-import { generateOpenAiEmbedding } from '@/lib/embedding.server';
+import { generateOpenAiEmbedding } from '@/lib/embedding';
 import { loadEnvConfig } from '@next/env';
 import { consola } from 'consola';
 

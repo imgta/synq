@@ -1,11 +1,30 @@
 'use server';
 
 import { cosineDistance, inArray, desc, sql } from 'drizzle-orm';
-import { generateOpenAiEmbedding } from '@/lib/embedding.server';
+import { generateOpenAiEmbedding } from '@/lib/embedding';
 import { generateText, generateObject } from 'ai';
 import { drizzleDB, tables } from '@/lib/db';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
+
+
+export async function summarizeBusiness({ description, model = 'gpt-4.1-nano' }: { description: string; model?: string; }) {
+  const { text } = await generateText({
+    model: openai(model),
+    prompt: `You are an expert business analyst specialized in writing in-depth documents that provide industry analysis and technical summary for a business based on its description. Your task is to analyze the business description and draft a formal, government official document with comprehensive analysis and details that describe the business.
+
+Here's the business description:
+<description>
+${description}
+</description>
+
+Follow these guidelines:
+1. Analyze the business description and focus on core economic activities and industry relevance and overlaps.
+2. Write objectively, using formal, bureaucratic wording similar to government documents.
+3. Do not include the business name or any specific NAICS codes.`,
+  });
+  return text;
+}
 
 /**
  * Finds relevant NAICS codes for a given business description using a hybrid scoring model
@@ -48,24 +67,6 @@ END`;
     .limit(limit);
 
   return results;
-}
-
-export async function summarizeBusiness({ description, model = 'gpt-4.1-nano' }: { description: string; model?: string; }) {
-  const { text } = await generateText({
-    model: openai(model),
-    prompt: `You are an expert business analyst specialized in writing in-depth documents that provide industry analysis and technical summary for a business based on its description. Your task is to analyze the business description and draft a formal, government official document with comprehensive analysis and details that describe the business.
-
-Here's the business description:
-<description>
-${description}
-</description>
-
-Follow these guidelines:
-1. Analyze the business description and focus on core economic activities and industry relevance and overlaps.
-2. Write objectively, using formal, bureaucratic wording similar to government documents.
-3. Do not include the business name or any specific NAICS codes.`,
-  });
-  return text;
 }
 
 

@@ -1,5 +1,4 @@
-'use client';
-
+import { consola } from 'consola';
 import {
   pipeline, env,
   type FeatureExtractionPipeline,
@@ -34,14 +33,14 @@ export class TransformersEmbeddingPipeline {
 
   private static async loadModel(model: EmbeddingModelCase, progress_callback?: ProgressCallback): Promise<FeatureExtractionPipeline> {
     const modelName = EmbeddingModels[model];
-    console.log(`Initializing embedding model: ${modelName}`);
+    consola.start(`Initializing embedding model: ${modelName}`);
 
     const extractor = await pipeline(this.task, modelName, {
       progress_callback,
       device: 'wasm',
       dtype: 'fp32',
     });
-    console.log(`${modelName} pipeline initialized`);
+    consola.success(`${modelName} pipeline initialized`);
     return extractor as FeatureExtractionPipeline;
   }
 
@@ -87,5 +86,32 @@ export class TransformersEmbeddingPipeline {
       console.error(`Embedding Error:`, error);
       throw new Error(`Failed to generate embeddings`);
     }
+  }
+}
+
+import OpenAI from 'openai';
+
+export const OpenAiEmbeddingModels = {
+  summary: { model: 'text-embedding-3-small', dimensions: 384 },
+  fulltext: { model: 'text-embedding-3-small', dimensions: 1024 },
+} as const;
+
+const openai = new OpenAI();
+
+export async function generateOpenAiEmbedding(input: string, opt?: { modelType: EmbeddingModelCase; }) {
+  const modelType = opt?.modelType ?? 'summary';
+  const { model, dimensions } = OpenAiEmbeddingModels[modelType];
+
+  try {
+    const embedding = await openai.embeddings.create({
+      input,
+      model,
+      dimensions,
+    });
+    consola.info(embedding);
+    return embedding.data[0].embedding;
+  } catch (error) {
+    consola.error(`OpenAI Embedding Error (${model}):`, error);
+    throw new Error(`Failed to generate embeddings (${model})`);
   }
 }

@@ -1,6 +1,6 @@
+import { ChevronsRight, Earth, ChartNoAxesCombined, Cctv, Cpu, Blocks, Radar } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ChevronsRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface QuickCompareCardProps {
@@ -70,3 +70,80 @@ export function QuickCompareCard({
     </Card>
   );
 }
+
+import type { CompareOptions } from '@/components/dataviz/radar-chart';
+
+type QuickCompareItem = {
+  icon: React.ReactNode;
+  title: string;
+  subheader: string;
+  options: CompareOptions;
+  className?: string;
+};
+
+export const CARD_ITEMS: QuickCompareItem[] = [
+  {
+    icon: <Earth className="size-4" />,
+    title: "The 'Dream Team' JV",
+    subheader: "A $45M contract needs both environmental remediation (8a) and secure construction (HZ).",
+    options: {
+      view: 'opportunity',
+      companies: ['Ridgeline Builders', 'Terra Sift'],
+      opportunities: ['BASE-2025-009'],
+    },
+  },
+  {
+    icon: <ChartNoAxesCombined className="size-4" />,
+    title: 'Specialists vs Golden Dome',
+    subheader: 'Can Apex, Contrail, and Ironclad cover C2 software and radar integration across two GD opps?',
+    options: {
+      view: 'opportunity',
+      companies: ['Apex Integration Partners', 'Contrail Analytics', 'Ironclad Embedded'],
+      opportunities: ['GD-2025-001', 'GD-2025-002'],
+      anchorOpportunity: 'GD-2025-001',
+    },
+  },
+  {
+    icon: <Cctv className="size-4" />,
+    title: 'New-Era Battlefield Sensors',
+    subheader: 'UAV analytics, radar modules, and biosurveillance systems are converging on major sensor procurements.',
+    options: {
+      view: 'opportunity',
+      companies: ['Contrail Analytics', 'Sentinel Microsystems', 'BioShield Innovations'],
+      opportunities: ['GD-2025-002', 'CBRN-2025-007'],
+    },
+  },
+  {
+    icon: <Cpu className="size-4" />,
+    title: 'The Niche Subcontractor',
+    subheader: 'An $18M VR training contract requires multilingual support, creating a perfect role for PolyGlot.',
+    options: {
+      view: 'opportunity',
+      companies: ['Tristimuli', 'PolyGlot Defense Solutions'],
+      opportunities: ['STE-2025-005'],
+    },
+    className: 'sm:border-l sm:border-white/10',
+  },
+  {
+    icon: <Blocks className="size-4" />,
+    title: 'Prime vs. Specialists',
+    subheader: 'Can an integrator like Apex handle a complex C2 contract alone, or do they need niche subs?',
+    options: {
+      view: 'opportunity',
+      companies: ['Apex Integration Partners', 'Contrail Analytics', 'Ironclad Embedded'],
+      opportunities: ['GD-2025-001'],
+    },
+    className: 'lg:border-l-0 lg:border-white/10',
+  },
+  {
+    icon: <Radar className="size-4" />,
+    title: 'Radar Modernization Race',
+    subheader: 'Defense giants and niche manufacturers are vying for contracts spanning command software, AESA radar hardware, and next-gen detection systems.',
+    options: {
+      view: 'opportunity',
+      companies: ['Apex Integration Partners', 'Sentinel Microsystems'],
+      opportunities: ['GD-2025-001', 'GD-2025-002', 'CBRN-2025-007'],
+      anchorOpportunity: 'GD-2025-002',
+    },
+  },
+];

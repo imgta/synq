@@ -2,10 +2,10 @@
 
 import { useChat } from '@ai-sdk/react';
 import { useRef, useState } from 'react';
-import { Sparkles, Earth, ChartNoAxesCombined, Cctv, Cpu, Blocks, Radar } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { ChartHandle, DataRadarChart, type CompareOptions } from '@/components/dataviz/radar-chart';
 import { ChatMessage, PartnerCompareArgs } from '@/components/chat/ChatMessage';
-import { QuickCompareCard } from '@/components/chat/quick-compare-card';
+import { QuickCompareCard, CARD_ITEMS } from '@/components/chat/quick-compare-card';
 import { SuggestionBadges } from '@/components/chat/SuggestionBadges';
 import { SearchBar } from '@/components/chat/SearchBar';
 
@@ -102,82 +102,16 @@ export default function Index() {
           <h3 className="px-2 text-sm font-soehne">Quick Compare</h3>
           <div className="rounded-xl overflow-hidden">
             <div className="grid gap-1 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-              <QuickCompareCard
-                icon={<Earth className="size-4" />}
-                title="The 'Dream Team' JV"
-                subheader="A $45M contract needs both environmental remediation (8a) and secure construction (HZ)."
-                onClick={() =>
-                  renderComparison({
-                    view: 'opportunity',
-                    companies: ['Ridgeline Builders', 'Terra Sift'],
-                    opportunities: ['BASE-2025-009'],
-                  })
-                }
-              />
-              <QuickCompareCard
-                icon={<ChartNoAxesCombined className="size-4" />}
-                title="Specialists vs Golden Dome"
-                subheader="Can Apex, Contrail, and Ironclad cover C2 software and radar integration across two GD opps?"
-                onClick={() =>
-                  renderComparison({
-                    view: 'opportunity',
-                    companies: ['Apex Integration Partners', 'Contrail Analytics', 'Ironclad Embedded'],
-                    opportunities: ['GD-2025-001', 'GD-2025-002'],
-                    anchorOpportunity: 'GD-2025-001',
-                  })
-                }
-              />
-              <QuickCompareCard
-                icon={<Cctv className="size-4" />}
-                title="New-Era Battlefield Sensors"
-                subheader="UAV analytics, radar modules, and biosurveillance systems are converging on major sensor procurements."
-                onClick={() =>
-                  renderComparison({
-                    view: 'opportunity',
-                    companies: ['Contrail Analytics', 'Sentinel Microsystems', 'BioShield Innovations'],
-                    opportunities: ['GD-2025-002', 'CBRN-2025-007'],
-                  })
-                }
-              />
-              <QuickCompareCard
-                icon={<Cpu className="size-4" />}
-                title="The Niche Subcontractor"
-                subheader="An $18M VR training contract requires multilingual support, creating a perfect role for PolyGlot."
-                className="sm:border-l sm:border-white/10"
-                onClick={() =>
-                  renderComparison({
-                    view: 'opportunity',
-                    companies: ['Tristimuli', 'PolyGlot Defense Solutions'],
-                    opportunities: ['STE-2025-005'],
-                  })
-                }
-              />
-              <QuickCompareCard
-                icon={<Blocks className="size-4" />}
-                title="Prime vs. Specialists"
-                subheader="Can an integrator like Apex handle a complex C2 contract alone, or do they need niche subs?"
-                className="lg:border-l-0 lg:border-white/10"
-                onClick={() =>
-                  renderComparison({
-                    view: 'opportunity',
-                    companies: ['Apex Integration Partners', 'Contrail Analytics', 'Ironclad Embedded'],
-                    opportunities: ['GD-2025-001'],
-                  })
-                }
-              />
-              <QuickCompareCard
-                icon={<Radar className="size-4" />}
-                title="Radar Modernization Race"
-                subheader="Defense giants and niche manufacturers are vying for contracts spanning command software, AESA radar hardware, and next-gen detection systems."
-                onClick={() =>
-                  renderComparison({
-                    view: 'opportunity',
-                    companies: ['Apex Integration Partners', 'Sentinel Microsystems'],
-                    opportunities: ['GD-2025-001', 'GD-2025-002', 'CBRN-2025-007'],
-                    anchorOpportunity: 'GD-2025-002',
-                  })
-                }
-              />
+              {CARD_ITEMS.map(({ icon, title, subheader, options, className }, i) => (
+                <QuickCompareCard
+                  key={i}
+                  icon={icon}
+                  title={title}
+                  subheader={subheader}
+                  className={className}
+                  onClick={() => renderComparison(options)}
+                />
+              ))}
             </div>
           </div>
         </section>

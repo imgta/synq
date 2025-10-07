@@ -6,171 +6,173 @@ import { z } from 'zod';
 
 type SetAsideStatus = 'qualified' | 'eligible' | 'ineligible' | 'not_applicable';
 
-export const findJVPartners = tool({
-  description:
-    'Return raw, unweighted JV partner candidates for an opportunity using ANN and basic metadata—no combined scores.\n' +
-    'Args can be any of: leadCompanyId | leadCompanyUEI | leadCompanyName, and opportunityNoticeId | opportunitySolicitationNumber | opportunityTitle.\n' +
-    'Examples:\n' +
-    '- leadCompanyUEI: "SENTINEL92M", opportunityNoticeId: "GD-2025-002"\n' +
-    '- leadCompanyName: "Tristimuli", opportunityTitle: "Virtual Flight Operations Trainer with Multilingual Voice"\n' +
-    '- leadCompanyId: "<uuid>", opportunitySolicitationNumber: "W31P4Q-25-R-0198"',
-  inputSchema: z.object({
-    leadCompanyId: z.string().optional().describe('Internal company id (uuid-like)'),
-    leadCompanyUEI: z.string().optional().describe('12-char UEI, e.g. "SENTINEL92M"'),
-    leadCompanyName: z.string().optional().describe('Exact company name, e.g. "Sentinel Microsystems"'),
+export async function findJVPartnersTool() {
+  return tool({
+    description:
+      'Return raw, unweighted JV partner candidates for an opportunity using ANN and basic metadata—no combined scores.\n' +
+      'Args can be any of: leadCompanyId | leadCompanyUEI | leadCompanyName, and opportunityNoticeId | opportunitySolicitationNumber | opportunityTitle.\n' +
+      'Examples:\n' +
+      '- leadCompanyUEI: "SENTINEL92M", opportunityNoticeId: "GD-2025-002"\n' +
+      '- leadCompanyName: "Tristimuli", opportunityTitle: "Virtual Flight Operations Trainer with Multilingual Voice"\n' +
+      '- leadCompanyId: "<uuid>", opportunitySolicitationNumber: "W31P4Q-25-R-0198"',
+    inputSchema: z.object({
+      leadCompanyId: z.string().optional().describe('Internal company id (uuid-like)'),
+      leadCompanyUEI: z.string().optional().describe('12-char UEI, e.g. "SENTINEL92M"'),
+      leadCompanyName: z.string().optional().describe('Exact company name, e.g. "Sentinel Microsystems"'),
 
-    opportunityNoticeId: z.string().optional().describe('Notice ID, e.g. "GD-2025-002"'),
-    opportunitySolicitationNumber: z.string().optional().describe('Solicitation number, e.g. "W31P4Q-25-R-0198"'),
-    opportunityTitle: z.string().optional().describe('Exact title, e.g. "Compact AESA Radar Modules for Mobile Air Defense"'),
+      opportunityNoticeId: z.string().optional().describe('Notice ID, e.g. "GD-2025-002"'),
+      opportunitySolicitationNumber: z.string().optional().describe('Solicitation number, e.g. "W31P4Q-25-R-0198"'),
+      opportunityTitle: z.string().optional().describe('Exact title, e.g. "Compact AESA Radar Modules for Mobile Air Defense"'),
 
-    limit: z.number().min(1).max(50).default(12),
-  })
-    .refine(i => !!(i.leadCompanyId || i.leadCompanyUEI || i.leadCompanyName), {
-      message: 'Provide leadCompanyId, leadCompanyUEI, or leadCompanyName.',
-    }),
+      limit: z.number().min(1).max(50).default(12),
+    })
+      .refine(i => !!(i.leadCompanyId || i.leadCompanyUEI || i.leadCompanyName), {
+        message: 'Provide leadCompanyId, leadCompanyUEI, or leadCompanyName.',
+      }),
 
-  execute: async ({
-    leadCompanyId,
-    leadCompanyUEI,
-    leadCompanyName,
-    opportunityNoticeId,
-    opportunitySolicitationNumber,
-    opportunityTitle,
-    limit,
-  }) => {
-    const db = drizzleDB();
-    const { companies, opportunities } = tables;
+    execute: async ({
+      leadCompanyId,
+      leadCompanyUEI,
+      leadCompanyName,
+      opportunityNoticeId,
+      opportunitySolicitationNumber,
+      opportunityTitle,
+      limit,
+    }) => {
+      const db = drizzleDB();
+      const { companies, opportunities } = tables;
 
-    // resolve and fetch lead company
-    const leadResolved = await resolveLeadCompany(db, { leadCompanyId, leadCompanyUEI, leadCompanyName });
-    if ('error' in (leadResolved)) return leadResolved;
-    const leadCompany = leadResolved as typeof companies.$inferSelect;
+      // resolve and fetch lead company
+      const leadResolved = await resolveLeadCompany(db, { leadCompanyId, leadCompanyUEI, leadCompanyName });
+      if ('error' in (leadResolved)) return leadResolved;
+      const leadCompany = leadResolved as typeof companies.$inferSelect;
 
-    // resolve and fetch opportunity
-    if (!opportunityNoticeId && !opportunitySolicitationNumber && !opportunityTitle) {
-      return { error: 'Provide opportunityNoticeId, opportunitySolicitationNumber, or opportunityTitle.' };
-    }
-    const oppResolved = await resolveOpportunity(db, { opportunityNoticeId, opportunitySolicitationNumber, opportunityTitle });
-    if ('error' in oppResolved) return oppResolved;
-    const opportunity = oppResolved as typeof opportunities.$inferSelect;
+      // resolve and fetch opportunity
+      if (!opportunityNoticeId && !opportunitySolicitationNumber && !opportunityTitle) {
+        return { error: 'Provide opportunityNoticeId, opportunitySolicitationNumber, or opportunityTitle.' };
+      }
+      const oppResolved = await resolveOpportunity(db, { opportunityNoticeId, opportunitySolicitationNumber, opportunityTitle });
+      if ('error' in oppResolved) return oppResolved;
+      const opportunity = oppResolved as typeof opportunities.$inferSelect;
 
-    if (!opportunity.embedding_summary) return { error: `Opportunity ${opportunity.notice_id} has no embedding_summary; cannot run ANN.` };
+      if (!opportunity.embedding_summary) return { error: `Opportunity ${opportunity.notice_id} has no embedding_summary; cannot run ANN.` };
 
-    // compute missing secondary NAICS relative to lead (raw signal)
-    const opportunitySecondaryNaics = (opportunity.secondary_naics ?? []) as string[];
-    const leadCompanyNaics = [leadCompany.primary_naics, ...(leadCompany.other_naics ?? [])];
-    const missingSecondaryNaics = opportunitySecondaryNaics.filter(code => !leadCompanyNaics.includes(code));
+      // compute missing secondary NAICS relative to lead (raw signal)
+      const opportunitySecondaryNaics = (opportunity.secondary_naics ?? []) as string[];
+      const leadCompanyNaics = [leadCompany.primary_naics, ...(leadCompany.other_naics ?? [])];
+      const missingSecondaryNaics = opportunitySecondaryNaics.filter(code => !leadCompanyNaics.includes(code));
 
-    // approximate nearest neighbor (ANN) preselect: order by cosine dist to opportunity embedding
-    const companyToOpportunityDistance = cosineDistance(companies.embedding_summary, opportunity.embedding_summary as number[]);
-    const preselectLimit = 30;
+      // approximate nearest neighbor (ANN) preselect: order by cosine dist to opportunity embedding
+      const companyToOpportunityDistance = cosineDistance(companies.embedding_summary, opportunity.embedding_summary as number[]);
+      const preselectLimit = 30;
 
-    const preselectedCompanies = await db
-      .select({
-        id: companies.id,
-        name: companies.name,
-        primary_naics: companies.primary_naics,
-        other_naics: companies.other_naics,
-        certifications: companies.certifications,
-        sba_certifications: companies.sba_certifications,
-        distance: companyToOpportunityDistance, // per-row computed (pgvector)
-      })
-      .from(companies)
-      .where(and(
-        ne(companies.id, leadCompany.id),       // exclude lead company
-        isNotNull(companies.embedding_summary), // ensure candidates have embedded index
-      ))
-      .orderBy(companyToOpportunityDistance)    // HNSW index on companies.embedding_summary
-      .limit(preselectLimit);
+      const preselectedCompanies = await db
+        .select({
+          id: companies.id,
+          name: companies.name,
+          primary_naics: companies.primary_naics,
+          other_naics: companies.other_naics,
+          certifications: companies.certifications,
+          sba_certifications: companies.sba_certifications,
+          distance: companyToOpportunityDistance, // per-row computed (pgvector)
+        })
+        .from(companies)
+        .where(and(
+          ne(companies.id, leadCompany.id),       // exclude lead company
+          isNotNull(companies.embedding_summary), // ensure candidates have embedded index
+        ))
+        .orderBy(companyToOpportunityDistance)    // HNSW index on companies.embedding_summary
+        .limit(preselectLimit);
 
-    // // barebones
-    // const candidates = preselectedCompanies.map(c => {
-    //   const otherNaics = Array.isArray(c.other_naics) ? (c.other_naics as string[]) : [];
-    //   const sbaCerts = Array.isArray(c.sba_certifications) ? (c.sba_certifications as string[]) : [];
-    //   const partnerNaics = [c.primary_naics, ...otherNaics];
-    //   const naicsCovered = missingSecondaryNaics.filter(code => partnerNaics.includes(code));
-    //   const naicsCoverFraction = missingSecondaryNaics.length
-    //     ? naicsCovered.length / missingSecondaryNaics.length
-    //     : 0;
-    //   const setAsideStatus = mapSetAside(opportunity.set_aside_code ?? null, sbaCerts);
-    //   return {
-    //     partner: {
-    //       id: c.id,
-    //       name: c.name,
-    //       primary_naics: c.primary_naics,
-    //       other_naics: otherNaics,
-    //       sba_certifications: sbaCerts,
-    //     },
-    //     metrics: { // RAW metrics for evaluation
-    //       distance: c.distance, // cosine dist: lower means closer to opportunity
-    //       naicsCovered,         // list of missing secondary NAICS this partner covers
-    //       naicsCoverFraction,   // fraction of missing secondary NAICS covered
-    //       setAsideStatus,       // coarse mapping, no size-standard checks here
-    //     },
-    //   };
-    // });
-    // consola.info('[findJVPartners] Candidates:', JSON.stringify(candidates.slice(0, limit), null, 2));
-    // const suggestedPartners = candidates.slice(0, limit); // return top-n by ANN order only
+      // // barebones
+      // const candidates = preselectedCompanies.map(c => {
+      //   const otherNaics = Array.isArray(c.other_naics) ? (c.other_naics as string[]) : [];
+      //   const sbaCerts = Array.isArray(c.sba_certifications) ? (c.sba_certifications as string[]) : [];
+      //   const partnerNaics = [c.primary_naics, ...otherNaics];
+      //   const naicsCovered = missingSecondaryNaics.filter(code => partnerNaics.includes(code));
+      //   const naicsCoverFraction = missingSecondaryNaics.length
+      //     ? naicsCovered.length / missingSecondaryNaics.length
+      //     : 0;
+      //   const setAsideStatus = mapSetAside(opportunity.set_aside_code ?? null, sbaCerts);
+      //   return {
+      //     partner: {
+      //       id: c.id,
+      //       name: c.name,
+      //       primary_naics: c.primary_naics,
+      //       other_naics: otherNaics,
+      //       sba_certifications: sbaCerts,
+      //     },
+      //     metrics: { // RAW metrics for evaluation
+      //       distance: c.distance, // cosine dist: lower means closer to opportunity
+      //       naicsCovered,         // list of missing secondary NAICS this partner covers
+      //       naicsCoverFraction,   // fraction of missing secondary NAICS covered
+      //       setAsideStatus,       // coarse mapping, no size-standard checks here
+      //     },
+      //   };
+      // });
+      // consola.info('[findJVPartners] Candidates:', JSON.stringify(candidates.slice(0, limit), null, 2));
+      // const suggestedPartners = candidates.slice(0, limit); // return top-n by ANN order only
 
-    const scoredCandidates = preselectedCompanies.map(candidate => {
-      const scoreResult = partnerFitScore({
-        leadCompany: {
+      const scoredCandidates = preselectedCompanies.map(candidate => {
+        const scoreResult = partnerFitScore({
+          leadCompany: {
+            primary_naics: leadCompany.primary_naics,
+            other_naics: leadCompany.other_naics as string[],
+            sba_certifications: leadCompany.sba_certifications as string[],
+          },
+          opportunity: {
+            primary_naics: opportunity.naics_code,
+            secondary_naics: opportunity.secondary_naics as string[],
+            set_aside_code: opportunity.set_aside_code,
+          },
+          jvCandidate: {
+            primary_naics: candidate.primary_naics,
+            other_naics: candidate.other_naics as string[],
+            sba_certifications: candidate.sba_certifications as string[],
+            distance: candidate.distance as number,
+          },
+        });
+        return {
+          partner: {
+            id: candidate.id,
+            name: candidate.name,
+            primary_naics: candidate.primary_naics,
+            other_naics: (candidate.other_naics ?? []) as string[],
+            sba_certifications: (candidate.sba_certifications ?? []) as string[],
+          },
+          metrics: {
+            fitScore: scoreResult.totalScore,
+            scoreBreakdown: scoreResult.breakdown,
+            distance: candidate.distance as number,
+            naicsGapsFilled: scoreResult.naicsGapsFilled,
+          },
+        };
+      });
+      scoredCandidates.sort((a, b) => b.metrics.fitScore - a.metrics.fitScore);
+      const suggestedPartners = scoredCandidates.slice(0, limit);
+      consola.info('[findJVPartners] Top Ranked Candidates:', JSON.stringify(suggestedPartners, null, 2));
+
+      return {
+        lead: {
+          id: leadCompany.id,
+          name: leadCompany.name,
           primary_naics: leadCompany.primary_naics,
-          other_naics: leadCompany.other_naics as string[],
-          sba_certifications: leadCompany.sba_certifications as string[],
+          other_naics: (leadCompany.other_naics ?? []) as string[],
+          sba_certifications: (leadCompany.sba_certifications ?? []) as string[],
         },
         opportunity: {
-          primary_naics: opportunity.naics_code,
-          secondary_naics: opportunity.secondary_naics as string[],
-          set_aside_code: opportunity.set_aside_code,
+          notice_id: opportunity.notice_id,
+          title: opportunity.title,
+          naics_code: opportunity.naics_code,
+          secondary_naics: opportunitySecondaryNaics,
+          set_aside_code: opportunity.set_aside_code ?? null,
         },
-        jvCandidate: {
-          primary_naics: candidate.primary_naics,
-          other_naics: candidate.other_naics as string[],
-          sba_certifications: candidate.sba_certifications as string[],
-          distance: candidate.distance as number,
-        },
-      });
-      return {
-        partner: {
-          id: candidate.id,
-          name: candidate.name,
-          primary_naics: candidate.primary_naics,
-          other_naics: (candidate.other_naics ?? []) as string[],
-          sba_certifications: (candidate.sba_certifications ?? []) as string[],
-        },
-        metrics: {
-          fitScore: scoreResult.totalScore,
-          scoreBreakdown: scoreResult.breakdown,
-          distance: candidate.distance as number,
-          naicsGapsFilled: scoreResult.naicsGapsFilled,
-        },
+        suggested_partners: suggestedPartners,
+        preselect_sample_size: preselectedCompanies.length,
       };
-    });
-    scoredCandidates.sort((a, b) => b.metrics.fitScore - a.metrics.fitScore);
-    const suggestedPartners = scoredCandidates.slice(0, limit);
-    consola.info('[findJVPartners] Top Ranked Candidates:', JSON.stringify(suggestedPartners, null, 2));
-
-    return {
-      lead: {
-        id: leadCompany.id,
-        name: leadCompany.name,
-        primary_naics: leadCompany.primary_naics,
-        other_naics: (leadCompany.other_naics ?? []) as string[],
-        sba_certifications: (leadCompany.sba_certifications ?? []) as string[],
-      },
-      opportunity: {
-        notice_id: opportunity.notice_id,
-        title: opportunity.title,
-        naics_code: opportunity.naics_code,
-        secondary_naics: opportunitySecondaryNaics,
-        set_aside_code: opportunity.set_aside_code ?? null,
-      },
-      suggested_partners: suggestedPartners,
-      preselect_sample_size: preselectedCompanies.length,
-    };
-  },
-});
+    },
+  });
+}
 
 async function resolveLeadCompany(
   db: ReturnType<typeof drizzleDB>,

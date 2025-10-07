@@ -15,8 +15,8 @@ importers:
         specifier: ^2.0.57
         version: 2.0.57(react@19.1.0)(zod@4.1.11)
       '@huggingface/transformers':
-        specifier: ^3.7.3
-        version: 3.7.3
+        specifier: ^3.7.5
+        version: 3.7.5
       '@neondatabase/serverless':
         specifier: ^1.0.1
         version: 1.0.1
@@ -612,8 +612,8 @@ packages:
     resolution: {integrity: sha512-yUZLld4lrM9iFxHCwFQ7D1HW2MWMwSbeB7WzWqFYDWK+rEb+WldkLdAJxUPOmgICMHZLzZGVcVjFh3w/YGubng==}
     engines: {node: '>=18'}
 
-  '@huggingface/transformers@3.7.3':
-    resolution: {integrity: sha512-on3Y4Pn9oK/OqNKygojnAn6RePtOVlIZbMFwnP6Q8q9p6UiYPp5IDR08KWN0FSic5fBbrZvF+vVH67vNXBqZvA==}
+  '@huggingface/transformers@3.7.5':
+    resolution: {integrity: sha512-5jvrIwHyRXfOKVaGKYvUZM6ZjJKQXWeKzIOdKBE5pdzPSNzTwBNx5NdWcGElf4Ddv7Dl2mWsvJh+G5RnCUxMmA==}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -4424,7 +4424,7 @@ snapshots:
 
   '@huggingface/jinja@0.5.1': {}
 
-  '@huggingface/transformers@3.7.3':
+  '@huggingface/transformers@3.7.5':
     dependencies:
       '@huggingface/jinja': 0.5.1
       onnxruntime-node: 1.21.0
